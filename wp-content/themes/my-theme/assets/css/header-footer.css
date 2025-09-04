@@ -1,0 +1,238 @@
+/* ================= HEADER ================= */
+.site-header {
+    background: #383838;
+    border-bottom: 1px solid #383838;
+    padding: 0.7rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* === LOGO === */
+.site-branding {
+    flex: 0 0 25%;
+    display: flex;
+    align-items: center;
+}
+
+.site-branding img {
+    max-height: 45px;
+}
+
+.site-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* === NAV MENU === */
+.navbar {
+    flex: 0 0 50%;
+}
+
+.nav-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li a {
+    color: #ffffff;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.nav-menu li a:hover {
+    color: #858070; /* same hover effect */
+}
+
+/* === SEARCH === */
+.header-search {
+    flex: 0 0 25%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Wrapper */
+.search-box {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 280px;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+    overflow: hidden;
+    background: #fff;
+}
+
+/* Input */
+.search-field {
+    flex: 0 0 80% !important;
+    padding: 0.5rem 1rem !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    font-family: 'Poppins', sans-serif !important;
+    width: auto !important;
+     border-radius: unset !important;
+    margin-bottom: auto !important;
+}
+
+.search-field:focus {
+    outline: none;
+}
+
+/* Button */
+.search-submit {
+    flex: 0 0 20% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #007bff !important;
+    border: none !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: background 0.3s ease !important;
+}
+
+.search-submit:hover {
+    background: #0056b3;
+}
+
+.search-submit svg {
+    fill: currentColor;
+}
+
+
+
+
+
+/* ================= FOOTER ================= */
+.site-footer {
+    background: #383838; /* dark footer */
+    color: #fff;
+    padding: 40px 20px 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Row 1: Logo */
+.footer-top {
+    display: flex;
+    justify-content: flex-start;
+    align-items: start;
+    margin-bottom: 30px;
+}
+
+.footer-logo img {
+    max-height: 50px;
+}
+
+.footer-site-title a {
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* Row 2: Widgets (3 columns) */
+.footer-widgets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.footer-widget-title {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.footer-widget {
+    color: #ccc;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Remove default list styles in all footer widgets */
+.footer-widgets ul,
+.footer-widgets ul li {
+    list-style: none !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Links inside widgets */
+.footer-widgets ul li a,
+.footer-widget a {
+    color: #aaa;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+    transition: color 0.3s ease;
+}
+
+.footer-widgets ul li a:hover,
+.footer-widget a:hover {
+    color: #fff;
+}
+
+/* Footer Menu (optional inline style) */
+.footer-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex; /* make it inline */
+    gap: 15px;
+}
+
+.footer-menu li {
+    margin: 0;
+}
+
+.footer-menu li a {
+    font-size: 0.9rem;
+    color: #aaa;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-menu li a:hover {
+    color: #fff;
+}
+
+/* Google Map (widget 3 example) */
+.footer-widget iframe {
+    width: 100%;
+    height: 200px;
+    border: none;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+/* Row 3: Bottom */
+.footer-bottom {
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 15px;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
