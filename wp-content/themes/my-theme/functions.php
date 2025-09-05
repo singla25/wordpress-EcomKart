@@ -56,17 +56,17 @@ function myTheme_enqueue_assets() {
 
     // Custom JS (depends on jQuery)
     wp_enqueue_script(
-        'filter-script',
-        get_template_directory_uri() . '/assets/js/filter-script.js',
+        'ajax-script',
+        get_template_directory_uri() . '/assets/js/ajax-script.js',
         array('jquery'),
-        filemtime(get_template_directory() . '/assets/js/filter-script.js'),
+        filemtime(get_template_directory() . '/assets/js/ajax-script.js'),
         true
     );
     
     // Pass ajax URL + nonce to JS
-    wp_localize_script('filter-script', 'filter_ajax', [
+    wp_localize_script('ajax-script', 'ajax_ajax', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('filter_nonce'),
+        'nonce' => wp_create_nonce('ajax_nonce'),
     ]);
     
     // Bootstrap JS (includes Popper)
@@ -86,7 +86,7 @@ add_action( 'wp_enqueue_scripts', 'myTheme_enqueue_assets' );
  */
 function mytheme_filter_data() {
     // Security check
-    check_ajax_referer('filter_nonce', 'nonce');
+    check_ajax_referer('ajax_nonce', 'nonce');
     
     $post_type = $_POST['ptype'];
     $search = $_POST['search'];
@@ -192,6 +192,200 @@ function mytheme_filter_data() {
 }
 add_action('wp_ajax_filter', 'mytheme_filter_data');        // when request comes from logged-in user
 add_action('wp_ajax_nopriv_filter', 'mytheme_filter_data'); // when an AJAX request comes from a logged-out user.
+
+function mytheme_edit_book() {
+
+    check_ajax_referer('ajax_nonce', 'nonce');
+
+    $bookid = intval($_REQUEST['id']);
+    $book = get_post($bookid);
+
+    if (!$book) {
+        wp_send_json_error(['message' => 'Book not found.']);
+    }
+
+    $booktitle       = $book->post_title;
+    $bookdescription = $book->post_content;
+    $booktagline     = get_post_meta($bookid, 'booktagline', true);
+    $bookprice       = get_post_meta($bookid, 'bookprice', true);
+    $images          = get_post_meta($bookid, 'book_images', true);
+
+    ob_start(); // start buffering output
+    ?>
+    <form id="edit-form" method="post" enctype="multipart/form-data" 
+          class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="editedbooktitle" class="form-label fw-bold">📕 Book Title</label>
+                <input id="editedbooktitle" type="text" name="editedbooktitle" class="form-control"
+                       value="<?php echo esc_attr($booktitle); ?>" required>
+            </div>
+
+            <div class="col-md-6">
+                <label for="editedbooktagline" class="form-label fw-bold">✨ Book Tagline</label>
+                <input id="editedbooktagline" type="text" name="editedbooktagline" class="form-control"
+                       value="<?php echo esc_attr($booktagline); ?>" required>
+            </div>
+
+            <div class="col-md-6">
+                <label for="editedfeatureimage" class="form-label fw-bold">🖼️ Feature Image</label>
+                <input id="editedfeatureimage" type="file" name="editedfeatureimage" class="form-control">
+
+                <?php 
+                $current_thumbnail_id = get_post_thumbnail_id($bookid);
+                if ($current_thumbnail_id) :
+                    $current_thumbnail_url = wp_get_attachment_url($current_thumbnail_id);
+                ?>
+                    <div class="mt-2">
+                        <img src="<?php echo esc_url($current_thumbnail_url); ?>" 
+                             alt="Feature Image" 
+                             class="img-thumbnail" 
+                             style="width:80px; height:80px; object-fit:cover;">
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted mt-2">No feature image set yet.</p>
+                <?php endif; ?>
+            </div>
+
+            <div class="col-md-6">
+                <label for="editedbookimage" class="form-label fw-bold">🖼️ Upload Photo</label>
+                <input id="editedbookimage" type="file" name="editedbookimage[]" class="form-control" multiple>
+
+                <?php if (!empty($images) && is_array($images)): ?>
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        <?php foreach ($images as $img): ?>
+                            <div class="position-relative" style="width:80px;">
+                                <img src="<?php echo esc_url($img); ?>" 
+                                     alt="Book Image" 
+                                     class="img-thumbnail" 
+                                     style="width:80px; height:80px; object-fit:cover;">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted mt-2">No images uploaded yet.</p>
+                <?php endif; ?>
+            </div>
+
+            <div class="col-md-6">
+                <label for="editedbookprice" class="form-label fw-bold">💰 Price</label>
+                <input id="editedbookprice" type="number" name="editedbookprice" class="form-control"
+                       value="<?php echo esc_attr($bookprice); ?>" min="0" required>
+            </div>
+
+            <div class="col-12">
+                <label for="editedbookdescription" class="form-label fw-bold">📝 Description</label>
+                <textarea id="editedbookdescription" name="editedbookdescription" class="form-control"
+                          rows="4" required><?php echo esc_textarea($bookdescription); ?></textarea>
+            </div>
+        </div>
+
+        <input type="hidden" name="bookid" value="<?php echo esc_attr($bookid); ?>">
+
+        <div class="d-grid mt-4">
+            <button type="submit" name="vendor-edit-book" class="btn btn-success btn-lg">✅ Save Book</button>
+        </div>
+    </form>
+    <?php
+
+    $output = ob_get_clean(); // get buffered HTML and clear buffer
+
+    wp_send_json([
+        'status' => 'success',
+        'html'   => $output,
+    ]);
+}
+add_action('wp_ajax_edit_book', 'mytheme_edit_book');
+add_action('wp_ajax_nopriv_edit_book', 'mytheme_edit_book');
+
+function mytheme_save_data_edit_book() {
+    check_ajax_referer('ajax_nonce', 'nonce');
+
+    $bookid        = intval($_POST['bookid']);
+    $existingbook  = get_post($bookid);
+    $bookpublisher = get_current_user_id();
+
+    if ($existingbook && $existingbook->post_author == $bookpublisher && $existingbook->post_type == 'books') {
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+        $booktitle       = sanitize_text_field($_POST['editedbooktitle']);
+        $booktagline     = sanitize_text_field($_POST['editedbooktagline']);
+        $bookdescription = wp_kses_post($_POST['editedbookdescription']);
+        $bookprice       = floatval($_POST['editedbookprice']);
+
+        // ✅ Handle gallery images
+        if (!empty($_FILES['editedbookimage']['name'][0])) {
+            $upload_overrides = ['test_form' => false];
+            $uploaded_urls    = [];
+
+            foreach ($_FILES['editedbookimage']['name'] as $key => $value) {
+                $file = [
+                    'name'     => $_FILES['editedbookimage']['name'][$key],
+                    'type'     => $_FILES['editedbookimage']['type'][$key],
+                    'tmp_name' => $_FILES['editedbookimage']['tmp_name'][$key],
+                    'error'    => $_FILES['editedbookimage']['error'][$key],
+                    'size'     => $_FILES['editedbookimage']['size'][$key]
+                ];
+
+                $movefile = wp_handle_upload($file, $upload_overrides);
+
+                if ($movefile && !isset($movefile['error'])) {
+                    $uploaded_urls[] = esc_url_raw($movefile['url']);
+                }
+            }
+
+            if (!empty($uploaded_urls)) {
+                update_post_meta($bookid, 'book_images', $uploaded_urls);
+            }
+        }
+
+        // ✅ Handle feature image
+        if (!empty($_FILES['editedfeatureimage']['name'])) {
+            $upload_overrides = ['test_form' => false];
+            $movefile = wp_handle_upload($_FILES['editedfeatureimage'], $upload_overrides);
+
+            if ($movefile && !isset($movefile['error'])) {
+                $filename  = $movefile['file'];
+                $filetype  = wp_check_filetype(basename($filename), null);
+
+                $attachment = [
+                    'post_mime_type' => $filetype['type'],
+                    'post_title'     => sanitize_file_name(basename($filename)),
+                    'post_status'    => 'inherit'
+                ];
+
+                $attach_id   = wp_insert_attachment($attachment, $filename, $bookid);
+                $attach_data = wp_generate_attachment_metadata($attach_id, $filename);
+                wp_update_attachment_metadata($attach_id, $attach_data);
+
+                set_post_thumbnail($bookid, $attach_id);
+            }
+        }
+
+        // ✅ Update post
+        $updated_book = [
+            'ID'           => $bookid,
+            'post_title'   => $booktitle,
+            'post_content' => $bookdescription,
+        ];
+
+        $book_updated_detail = wp_update_post($updated_book);
+
+        if (is_wp_error($book_updated_detail)) {
+            wp_send_json_error(['message' => $book_updated_detail->get_error_message()]);
+        } else {
+            update_post_meta($bookid, 'bookprice', $bookprice);
+            update_post_meta($bookid, 'booktagline', $booktagline);
+
+            wp_send_json_success(['message' => '✅ Book updated successfully!', 'url' => home_url('/vendor')]);
+        }
+    } else {
+        wp_send_json_error(['message' => '❌ You do not have permission to edit this book.']);
+    }
+}
+add_action('wp_ajax_save_data_edit_book', 'mytheme_save_data_edit_book');
+add_action('wp_ajax_nopriv_save_data_edit_book', 'mytheme_save_data_edit_book');
 
 
 /**
@@ -1205,112 +1399,112 @@ function vendor_book() {
 
 
     // Edit a Book
-    if (isset($_POST['vendor-edit-book']) && $_POST['vendor-edit-book'] == 1) {
+    // if (isset($_POST['vendor-edit-book']) && $_POST['vendor-edit-book'] == 1) {
 
-        $bookid        = intval($_GET['id']);
-        $existingbook  = get_post($bookid);
+    //     $bookid        = intval($_GET['id']);
+    //     $existingbook  = get_post($bookid);
 
-        $booktitle       = sanitize_text_field($_POST['editedbooktitle']);
-        $booktagline     = sanitize_text_field($_POST['editedbooktagline']);
-        $bookdescription = wp_kses_post($_POST['editedbookdescription']);
-        $bookprice       = floatval($_POST['editedbookprice']);
-        $bookpublisher   = get_current_user_id();
+    //     $booktitle       = sanitize_text_field($_POST['editedbooktitle']);
+    //     $booktagline     = sanitize_text_field($_POST['editedbooktagline']);
+    //     $bookdescription = wp_kses_post($_POST['editedbookdescription']);
+    //     $bookprice       = floatval($_POST['editedbookprice']);
+    //     $bookpublisher   = get_current_user_id();
 
-        if ($existingbook && $existingbook->post_author == $bookpublisher && $existingbook->post_type == 'books') {
+    //     if ($existingbook && $existingbook->post_author == $bookpublisher && $existingbook->post_type == 'books') {
 
-            require_once(ABSPATH . 'wp-admin/includes/file.php');
-            require_once(ABSPATH . 'wp-admin/includes/image.php');
+    //         require_once(ABSPATH . 'wp-admin/includes/file.php');
+    //         require_once(ABSPATH . 'wp-admin/includes/image.php');
 
-            // ✅ Handle multiple gallery images (book_images)
-            if (!empty($_FILES['editedbookimage']['name'][0])) {
-                $upload_overrides = array('test_form' => false);
-                $uploaded_urls    = array();
+    //         // ✅ Handle multiple gallery images (book_images)
+    //         if (!empty($_FILES['editedbookimage']['name'][0])) {
+    //             $upload_overrides = array('test_form' => false);
+    //             $uploaded_urls    = array();
 
-                foreach ($_FILES['editedbookimage']['name'] as $key => $value) {
-                    if ($_FILES['editedbookimage']['name'][$key]) {
-                        $file = array(
-                            'name'     => $_FILES['editedbookimage']['name'][$key],
-                            'type'     => $_FILES['editedbookimage']['type'][$key],
-                            'tmp_name' => $_FILES['editedbookimage']['tmp_name'][$key],
-                            'error'    => $_FILES['editedbookimage']['error'][$key],
-                            'size'     => $_FILES['editedbookimage']['size'][$key]
-                        );
+    //             foreach ($_FILES['editedbookimage']['name'] as $key => $value) {
+    //                 if ($_FILES['editedbookimage']['name'][$key]) {
+    //                     $file = array(
+    //                         'name'     => $_FILES['editedbookimage']['name'][$key],
+    //                         'type'     => $_FILES['editedbookimage']['type'][$key],
+    //                         'tmp_name' => $_FILES['editedbookimage']['tmp_name'][$key],
+    //                         'error'    => $_FILES['editedbookimage']['error'][$key],
+    //                         'size'     => $_FILES['editedbookimage']['size'][$key]
+    //                     );
 
-                        // Upload file
-                        $movefile = wp_handle_upload($file, $upload_overrides);
+    //                     // Upload file
+    //                     $movefile = wp_handle_upload($file, $upload_overrides);
 
-                        if ($movefile && !isset($movefile['error'])) {
-                            $uploaded_urls[] = esc_url_raw($movefile['url']);
-                        } else {
-                            error_log('Upload failed: ' . $movefile['error']); // log errors
-                        }
-                    }
-                }
+    //                     if ($movefile && !isset($movefile['error'])) {
+    //                         $uploaded_urls[] = esc_url_raw($movefile['url']);
+    //                     } else {
+    //                         error_log('Upload failed: ' . $movefile['error']); // log errors
+    //                     }
+    //                 }
+    //             }
 
-                if (!empty($uploaded_urls)) {
-                    // Replace old gallery images
-                    update_post_meta($bookid, 'book_images', $uploaded_urls);
-                }
-            }
+    //             if (!empty($uploaded_urls)) {
+    //                 // Replace old gallery images
+    //                 update_post_meta($bookid, 'book_images', $uploaded_urls);
+    //             }
+    //         }
 
-            // ✅ Handle feature image (thumbnail)
-            if (!empty($_FILES['editedfeatureimage']['name'])) {
-                $upload_overrides = array('test_form' => false);
+    //         // ✅ Handle feature image (thumbnail)
+    //         if (!empty($_FILES['editedfeatureimage']['name'])) {
+    //             $upload_overrides = array('test_form' => false);
 
-                $movefile = wp_handle_upload($_FILES['editedfeatureimage'], $upload_overrides);
+    //             $movefile = wp_handle_upload($_FILES['editedfeatureimage'], $upload_overrides);
 
-                if ($movefile && !isset($movefile['error'])) {
-                    $filename  = $movefile['file'];
-                    $filetype  = wp_check_filetype(basename($filename), null);
+    //             if ($movefile && !isset($movefile['error'])) {
+    //                 $filename  = $movefile['file'];
+    //                 $filetype  = wp_check_filetype(basename($filename), null);
 
-                    $attachment = array(
-                        'post_mime_type' => $filetype['type'],
-                        'post_title'     => sanitize_file_name(basename($filename)),
-                        'post_content'   => '',
-                        'post_status'    => 'inherit'
-                    );
+    //                 $attachment = array(
+    //                     'post_mime_type' => $filetype['type'],
+    //                     'post_title'     => sanitize_file_name(basename($filename)),
+    //                     'post_content'   => '',
+    //                     'post_status'    => 'inherit'
+    //                 );
 
-                    // Insert into media library
-                    $attach_id = wp_insert_attachment($attachment, $filename, $bookid);
+    //                 // Insert into media library
+    //                 $attach_id = wp_insert_attachment($attachment, $filename, $bookid);
 
-                    // Generate attachment metadata
-                    $attach_data = wp_generate_attachment_metadata($attach_id, $filename);
-                    wp_update_attachment_metadata($attach_id, $attach_data);
+    //                 // Generate attachment metadata
+    //                 $attach_data = wp_generate_attachment_metadata($attach_id, $filename);
+    //                 wp_update_attachment_metadata($attach_id, $attach_data);
 
-                    // ✅ Set as featured image
-                    set_post_thumbnail($bookid, $attach_id);
-                } else {
-                    error_log('Feature image upload failed: ' . $movefile['error']);
-                }
-            }
+    //                 // ✅ Set as featured image
+    //                 set_post_thumbnail($bookid, $attach_id);
+    //             } else {
+    //                 error_log('Feature image upload failed: ' . $movefile['error']);
+    //             }
+    //         }
 
-            // ✅ Update post details
-            $updated_book = array(
-                'ID'           => $bookid,
-                'post_title'   => $booktitle,
-                'post_content' => $bookdescription,
-                'post_status'  => 'publish',
-                'post_type'    => 'books',
-                'post_author'  => $bookpublisher,
-            );
+    //         // ✅ Update post details
+    //         $updated_book = array(
+    //             'ID'           => $bookid,
+    //             'post_title'   => $booktitle,
+    //             'post_content' => $bookdescription,
+    //             'post_status'  => 'publish',
+    //             'post_type'    => 'books',
+    //             'post_author'  => $bookpublisher,
+    //         );
 
-            $book_updated_detail = wp_update_post($updated_book);
+    //         $book_updated_detail = wp_update_post($updated_book);
 
-            if (is_wp_error($book_updated_detail)) {
-                $errors['general'] = $book_updated_detail->get_error_message();
-            } else {
-                update_post_meta($bookid, 'bookprice', $bookprice);
-                update_post_meta($bookid, 'booktagline', $booktagline);
+    //         if (is_wp_error($book_updated_detail)) {
+    //             $errors['general'] = $book_updated_detail->get_error_message();
+    //         } else {
+    //             update_post_meta($bookid, 'bookprice', $bookprice);
+    //             update_post_meta($bookid, 'booktagline', $booktagline);
 
-                wp_redirect(home_url('/vendor/?tab=books&edited=1'));
-                exit;
-            }
+    //             wp_redirect(home_url('/vendor/?tab=books&edited=1'));
+    //             exit;
+    //         }
 
-        } else {
-            echo '<div class="alert alert-danger">You do not have permission to edit this book.</div>';
-            return;
-        }
-    }
+    //     } else {
+    //         echo '<div class="alert alert-danger">You do not have permission to edit this book.</div>';
+    //         return;
+    //     }
+    // }
 
 
     // Delete a Book
@@ -1396,8 +1590,8 @@ function vendor_view_books() {
                             <a href="<?php the_permalink(); ?>" class="btn btn-outline-primary btn-sm">
                             📖 View
                             </a>
-                            <a href="?tab=edit&id=<?php echo esc_attr($post_id); ?>" 
-                                class="btn btn-outline-primary btn-sm">✏️ Edit</a>
+                            <a href="javascript:void(0)" data-type="edit" data-id="<?php echo esc_attr($post_id); ?>"
+                                class="btn btn-outline-primary btn-sm" id="edit-button">✏️ Edit</a>                                
                         </div>
                     </div>
                 </div>

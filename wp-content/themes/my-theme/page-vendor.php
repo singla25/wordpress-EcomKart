@@ -21,22 +21,6 @@ if ( ! in_array( 'vendor', (array) $current_user->roles ) ) {
 $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'books';
 
 
-// Edit a Book (only if id exists and tab is edit)
-$bookid = $booktitle = $bookdescription = $bookprice = '';
-
-if ($tab === 'edit' && isset($_GET['id'])) {
-    $book_id = $_GET['id'];
-    $book    = get_post($book_id);
-
-    if ($book && $book->post_author == get_current_user_id()) {
-        $bookid          = $book->ID;
-        $booktitle       = $book->post_title;
-        $bookdescription = $book->post_content;
-        $bookprice       = get_post_meta($bookid, 'bookprice', true);
-    }
-}
-
-
 // User Detail
 $userid = get_current_user_id();
 $user   = get_userdata($userid);
@@ -101,67 +85,76 @@ $booktable = new WP_Query($args);
       <div class="col-md-9 col-lg-10 p-4 bg-secondary">
         <div class="card shadow-sm rounded-3 p-4">
           
-            <!-- Books -->
+          <!-- Books -->
           <?php if ($tab == 'books'): ?>
-            <h3 class="fw-bold text-center">📚 My Books</h3>
-            <p class="text-muted text-center pb-4">List of all books</p>
-            <?php echo do_shortcode('[vendor_books]'); ?>
+          <h3 class="fw-bold text-center">📚 My Books</h3>
+          <p class="text-muted text-center pb-4">List of all books</p>
+          <?php echo do_shortcode('[vendor_books]'); ?>
 
-            <!-- Add a Book -->
+          <div id="edit-page" class="edit-modal">
+            <!-- Modal content -->
+            <div class="edit-modal-content">
+              <span class="close">&times;</span>
+              <h3 class="fw-bold text-center">✏️ Edit Book</h3>
+              <div class="container" id="edit-form"></div>
+            </div>
+          </div>
+
+          <!-- Add a Book -->
           <?php elseif ($tab == 'add'): ?>
-            <h3 class="fw-bold text-center">➕ Add Book</h3>
+          <h3 class="fw-bold text-center">➕ Add Book</h3>
 
-            <form method="post" enctype="multipart/form-data" class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
-              <div class="row g-3">
-               
-                <div class="col-md-6">
-                  <label for="booktitle" class="form-label fw-bold">📕 Book Title</label>
-                  <input id="booktitle" type="text" name="booktitle" class="form-control" placeholder="Enter book title" required>
-                </div>
-
-                <div class="col-md-6">
-                  <label for="booktagline" class="form-label fw-bold">✨ Book Tagline</label>
-                  <input id="booktagline" type="text" name="booktagline" class="form-control" placeholder="Book Tagline" required>
-                </div>
-
-                <div class="col-md-6">
-                  <label for="featureimage" class="form-label fw-bold">🖼️ Feature Image</label>
-                  <input id="featureimage" type="file" name="featureimage" class="form-control" required>
-                </div>
-
-                <div class="col-md-6">
-                  <label for="bookimage" class="form-label fw-bold">🖼️ Upload Photo</label>
-                  <input id="bookimage" type="file" name="bookimage[]" class="form-control" multiple required>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="bookprice" class="form-label fw-bold">💰 Price</label>
-                  <input id="bookprice" type="number" name="bookprice" class="form-control" placeholder="Enter price" min="0" required>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="bookprice" class="form-label fw-bold">Genre</label>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="bookprice" class="form-label fw-bold">Author</label>
-                </div>
-
-                <div class="col-12">
-                  <label for="bookdescription" class="form-label fw-bold">📝 Description</label>
-                  <textarea id="bookdescription" name="bookdescription" class="form-control" rows="4" placeholder="Write a detailed description..." required></textarea>
-                </div>
+          <form method="post" enctype="multipart/form-data" class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
+            <div class="row g-3">
+              
+              <div class="col-md-6">
+                <label for="booktitle" class="form-label fw-bold">📕 Book Title</label>
+                <input id="booktitle" type="text" name="booktitle" class="form-control" placeholder="Enter book title" required>
               </div>
 
-              <input type="hidden" name="vendor-add-book" value="1">
-
-              <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-success btn-lg">✅ Save Book</button>
+              <div class="col-md-6">
+                <label for="booktagline" class="form-label fw-bold">✨ Book Tagline</label>
+                <input id="booktagline" type="text" name="booktagline" class="form-control" placeholder="Book Tagline" required>
               </div>
-            </form>
 
-            <!-- Edit a Book -->
-          <?php elseif ($tab == 'edit' && isset($_GET['id'])): ?>
+              <div class="col-md-6">
+                <label for="featureimage" class="form-label fw-bold">🖼️ Feature Image</label>
+                <input id="featureimage" type="file" name="featureimage" class="form-control" required>
+              </div>
+
+              <div class="col-md-6">
+                <label for="bookimage" class="form-label fw-bold">🖼️ Upload Photo</label>
+                <input id="bookimage" type="file" name="bookimage[]" class="form-control" multiple required>
+              </div>
+
+              <div class="col-md-4">
+                <label for="bookprice" class="form-label fw-bold">💰 Price</label>
+                <input id="bookprice" type="number" name="bookprice" class="form-control" placeholder="Enter price" min="0" required>
+              </div>
+
+              <!-- <div class="col-md-4">
+                <label for="bookprice" class="form-label fw-bold">Genre</label>
+              </div>
+
+              <div class="col-md-4">
+                <label for="bookprice" class="form-label fw-bold">Author</label>
+              </div> -->
+
+              <div class="col-12">
+                <label for="bookdescription" class="form-label fw-bold">📝 Description</label>
+                <textarea id="bookdescription" name="bookdescription" class="form-control" rows="4" placeholder="Write a detailed description..." required></textarea>
+              </div>
+            </div>
+
+            <input type="hidden" name="vendor-add-book" value="1">
+
+            <div class="d-grid mt-4">
+              <button type="submit" class="btn btn-success btn-lg">✅ Save Book</button>
+            </div>
+          </form>
+
+          <!-- Edit a Book -->
+          <?php /* elseif ($tab == 'edit' && isset($_GET['id'])): ?>
             <h3 class="fw-bold text-center">✏️ Edit Book</h3>
             <?php
               $book = get_post($_GET['id']);
@@ -176,7 +169,6 @@ $booktable = new WP_Query($args);
 
             <form method="post" enctype="multipart/form-data" class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
               <div class="row g-3">
-               
                 <div class="col-md-6">
                   <label for="editedbooktitle" class="form-label fw-bold">📕 Book Title</label>
                   <input id="editedbooktitle" type="text" name="editedbooktitle" class="form-control" value="<?php echo esc_attr($booktitle); ?>" required>
@@ -246,100 +238,131 @@ $booktable = new WP_Query($args);
               </div>
             </form>
             <?php } else { ?>
-              <div class="alert alert-danger">You do not have permission to edit this book.</div>
-            <?php } ?>
+            <div class="alert alert-danger">You do not have permission to edit this book.</div>
+          <?php } */ ?>
 
-            <!-- Setting -->
+          <!-- Setting -->
           <?php elseif ($tab == 'settings'): ?>
-            <h3 class="fw-bold text-center">⚙️ Settings</h3>
-            <p class="text-muted text-center">Manage your account settings here.</p>
-            
-            <div class="row g4 pt-3">
-              <!-- User Details -->
-              <div class="col-md-2"></div>
-              <div class="col-8">
-                <div class="card shadow-sm rounded-3 p-4">
-                  <h5 class="fw-bold mb-3 text-center">👤 User Details</h5>
-                  <div class="row">
-                    <!-- Left Column -->
-                    <div class="col-md-6 ps-5">
-                      <ul class="list-unstyled mb-0">
-                        <li><strong>Username:</strong> <?php echo esc_html($user_username); ?></li>
-                        <li><strong>Full Name:</strong> <?php echo esc_html($user_name); ?></li>
-                        <li><strong>Email:</strong> <?php echo esc_html($user_email); ?></li>
-                      </ul>
-                    </div>
-
-                    <!-- Right Column -->
-                    <div class="col-md-6">
-                      <ul class="list-unstyled mb-0">
-                        <li><strong>Age:</strong> <?php echo esc_html($userage); ?></li>
-                        <li><strong>Phone:</strong> <?php echo esc_html($userphonenumber); ?></li>
-                      </ul>
-                    </div>
+          <h3 class="fw-bold text-center">⚙️ Settings</h3>
+          <p class="text-muted text-center">Manage your account settings here.</p>
+          
+          <div class="row g4 pt-3">
+            <!-- User Details -->
+            <div class="col-md-2"></div>
+            <div class="col-8">
+              <div class="card shadow-sm rounded-3 p-4">
+                <h5 class="fw-bold mb-3 text-center">👤 User Details</h5>
+                <div class="row">
+                  <!-- Left Column -->
+                  <div class="col-md-6 ps-5">
+                    <ul class="list-unstyled mb-0">
+                      <li><strong>Username:</strong> <?php echo esc_html($user_username); ?></li>
+                      <li><strong>Full Name:</strong> <?php echo esc_html($user_name); ?></li>
+                      <li><strong>Email:</strong> <?php echo esc_html($user_email); ?></li>
+                    </ul>
                   </div>
-                </div>
-              </div>
-              <div class="col-md-2"></div>
 
-              <!-- Book Table -->
-               <div class="col-12 mt-5">
-                <div class="card shadow-sm rounded-3 p-4">
-                  <h5 class="fw-bold mb-3 text-center">📚 My Books</h5>
-                  <div class="table-responsive">
-                    <table class="table table-bordered align-middle">
-                      <thead class="table-dark">
-                        <tr>
-                          <th>Book ID</th>
-                          <th>Title</th>
-                          <th>Description</th>
-                          <th>Price</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <?php 
-                        if ($booktable->have_posts()) {
-                          echo '<div class="row g-4">';
-                          while ($booktable->have_posts()) {
-                            $booktable->the_post();
-                            $post_id = get_the_ID();
-                            $book_author_id = get_post_field('post_author', $post_id);
-
-                            if (intval($book_author_id) !== intval($current_vendor)) {
-                              continue;
-                            }
-
-                            $price = get_post_meta($post_id, 'bookprice', true);
-
-                        ?>
-                        <tr>
-                          <td><?php echo $post_id; ?></td>
-                          <td><?php echo the_title(); ?></td>
-                          <td><?php echo the_content(); ?></td>
-                          <td><?php echo esc_html($price); ?></td>
-                          <td>
-                            <a href="?tab=edit&id=<?php echo $post_id; ?>" class="btn btn-sm btn-primary my-2">✏️ Edit</a>
-                            <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
-                              <input type="hidden" name="vendor-delete-book" value="<?php echo $post_id; ?>">
-                              <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
-                            </form>
-                          </td>
-                        </tr>
-                        <?php
-                        }
-                       } else {
-                          echo '<tr><td colspan="3" class="text-center text-muted">📚 No books found</td></tr>';
-                       }
-                       ?>
-                     </tbody>
-                    </table>
+                  <!-- Right Column -->
+                  <div class="col-md-6">
+                    <ul class="list-unstyled mb-0">
+                      <li><strong>Age:</strong> <?php echo esc_html($userage); ?></li>
+                      <li><strong>Phone:</strong> <?php echo esc_html($userphonenumber); ?></li>
+                    </ul>
                   </div>
                 </div>
               </div>
             </div>
+            <div class="col-md-2"></div>
 
-            <!-- Questions Tab -->
+            <!-- Book Table -->
+              <div class="col-12 mt-5">
+              <div class="card shadow-sm rounded-3 p-4">
+                <h5 class="fw-bold mb-3 text-center">📚 My Books</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered align-middle">
+                    <thead class="table-dark">
+                      <tr>
+                        <th>Book ID</th>
+                        <th>Title</th>
+                        <th>Tagline</th>
+                        <th>Feature Image</th>
+                        <th>Image Gallary</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php 
+                      if ($booktable->have_posts()) {
+                        echo '<div class="row g-4">';
+                        while ($booktable->have_posts()) {
+                          $booktable->the_post();
+                          $post_id = get_the_ID();
+                          $book_author_id = get_post_field('post_author', $post_id);
+
+                          $tagline = get_post_meta($post_id, 'booktagline', true);
+
+                          if (intval($book_author_id) !== intval($current_vendor)) {
+                            continue;
+                          }
+
+                          $price = get_post_meta($post_id, 'bookprice', true);
+                      ?>
+                      <tr>
+                        <td><?php echo $post_id; ?></td>
+                        <td><?php echo the_title(); ?></td>
+                        <td><?php echo $tagline; ?></td>
+                        <td>
+                          <?php 
+                          if (has_post_thumbnail($post_id)) {
+                              echo get_the_post_thumbnail($post_id, 'thumbnail', [
+                                  'class' => 'img-thumbnail',
+                                  'style' => 'width:80px; height:80px; object-fit:cover;'
+                              ]);
+                          } else {
+                              echo '<span class="text-muted">No Feature Image</span>';
+                          }
+                          ?>
+                        </td>
+                        <td>
+                          <?php
+                          $gallery_images = get_post_meta($post_id, 'book_images', true);
+                          if (!empty($gallery_images) && is_array($gallery_images)) {
+                            foreach ($gallery_images as $img) {
+                              echo '<img src="' . esc_url($img) . '" 
+                                    class="img-thumbnail me-1 mb-1" 
+                                    style="width:60px; height:60px; object-fit:cover;">';
+                            }
+                          } else {
+                              echo '<span class="text-muted">No Gallery</span>';
+                          }
+                          ?>
+                        </td>
+                        <td><?php echo the_content(); ?></td>
+                        <td><?php echo esc_html($price); ?></td>
+                        <td>
+                          <a href="?tab=edit&id=<?php echo $post_id; ?>" class="btn btn-sm btn-primary my-2">✏️ Edit</a>
+                          <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
+                            <input type="hidden" name="vendor-delete-book" value="<?php echo $post_id; ?>">
+                            <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
+                          </form>
+                        </td>
+                      </tr>
+                      <?php
+                      }
+                      } else {
+                        echo '<tr><td colspan="3" class="text-center text-muted">📚 No books found</td></tr>';
+                      }
+                      ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Questions Tab -->
           <?php elseif ($tab == 'questions'): ?>
           <h3 class="fw-bold text-center">💬 Questions</h3>
           <p class="text-muted text-center pb-4">Here are all questions asked by users about your books.</p>
@@ -431,6 +454,5 @@ $booktable = new WP_Query($args);
     </div>
   </div>
 </div>
-
 
 <?php get_footer(); ?>
