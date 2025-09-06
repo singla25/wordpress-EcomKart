@@ -32,7 +32,7 @@ get_header();
                         <div class="col-md-3">
                             <div class="card h-100 border-0 shadow-sm">
                                 <?php if ( has_post_thumbnail() ) : ?>
-                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded']); ?>
+                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded', 'style' => 'height:150px; object-fit:cover;']); ?>
                                 <?php endif; ?>
                                 <div class="card-body">
                                     <h5 class="card-title fw-bold">
@@ -61,8 +61,9 @@ get_header();
                         <div class="col-md-3">
                             <div class="card h-100 border-0 shadow-sm">
                                 <?php if ( has_post_thumbnail() ) : ?>
-                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded']); ?>
+                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded', 'style' => 'height:150px; object-fit:cover;']); ?>
                                 <?php endif; ?>
+
                                 <div class="card-body">
                                     <h5 class="card-title fw-bold">
                                         <a href="<?php the_permalink(); ?>" class="text-dark text-decoration-none"><?php the_title(); ?></a>
@@ -90,8 +91,9 @@ get_header();
                         <div class="col-md-3">
                             <div class="card h-100 border-0 shadow-sm">
                                 <?php if ( has_post_thumbnail() ) : ?>
-                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded']); ?>
+                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded', 'style' => 'height:150px; object-fit:cover;']); ?>
                                 <?php endif; ?>
+
                                 <div class="card-body">
                                     <h5 class="card-title fw-bold">
                                         <a href="<?php the_permalink(); ?>" class="text-dark text-decoration-none"><?php the_title(); ?></a>
@@ -119,8 +121,9 @@ get_header();
                         <div class="col-md-3">
                             <div class="card h-100 border-0 shadow-sm">
                                 <?php if ( has_post_thumbnail() ) : ?>
-                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded']); ?>
+                                    <?php the_post_thumbnail('medium', ['class' => 'card-img-top rounded', 'style' => 'height:150px; object-fit:cover;']); ?>
                                 <?php endif; ?>
+
                                 <div class="card-body">
                                     <h5 class="card-title fw-bold">
                                         <a href="<?php the_permalink(); ?>" class="text-dark text-decoration-none"><?php the_title(); ?></a>

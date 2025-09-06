@@ -104,7 +104,7 @@ $booktable = new WP_Query($args);
           <?php elseif ($tab == 'add'): ?>
           <h3 class="fw-bold text-center">➕ Add Book</h3>
 
-          <form method="post" enctype="multipart/form-data" class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
+          <form method="post" id="addBook-vendor-form" enctype="multipart/form-data" class="p-4 shadow-lg rounded-3 bg-secondary bg-opacity-75 text-white">
             <div class="row g-3">
               
               <div class="col-md-6">
@@ -342,8 +342,7 @@ $booktable = new WP_Query($args);
                         <td><?php echo the_content(); ?></td>
                         <td><?php echo esc_html($price); ?></td>
                         <td>
-                          <a href="?tab=edit&id=<?php echo $post_id; ?>" class="btn btn-sm btn-primary my-2">✏️ Edit</a>
-                          <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
+                          <form method="post" id="delete-book" class="d-inline" data-book-id="<?php echo $post_id; ?>">
                             <input type="hidden" name="vendor-delete-book" value="<?php echo $post_id; ?>">
                             <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
                           </form>
