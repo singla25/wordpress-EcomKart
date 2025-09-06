@@ -202,11 +202,6 @@ jQuery(document).ready(function($){
   });
 });
 
-
-
-
-
-
 // Contact Form
 jQuery(document).ready(function($) {
 

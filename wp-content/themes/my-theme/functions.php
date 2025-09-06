@@ -496,8 +496,6 @@ function mytheme_delete_book() {
 add_action('wp_ajax_delete_book', 'mytheme_delete_book');
 add_action('wp_ajax_nopriv_delete_book', 'mytheme_delete_book');
 
-
-
 function mytheme_contact_form() {
 
     check_ajax_referer('ajax_nonce', 'nonce');
@@ -576,7 +574,7 @@ function myTheme_widgets() {
         'name'          => __( 'Feature Cards Section', 'myTheme' ),
         'id'            => 'feature-cards',
         'description'   => __( 'Add widgets to display in the Feature Cards section', 'myTheme' ),
-        'before_widget' => '<div class="col-md-4"><div class="card shadow-sm h-100 p-4">',
+        'before_widget' => '<div class="col-md-3"><div class="card bg-dark bg-opacity-75 text-light shadow-sm h-100 p-4 text-center">',
         'after_widget'  => '</div></div>',
         'before_title'  => '<h5 class="fw-bold">',
         'after_title'   => '</h5>',

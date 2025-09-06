@@ -36,7 +36,6 @@ get_header(); ?>
                     <?php endif; ?>
 
                     <!-- Post Content -->
-                    <h4 class="fw-bold mb-3">About this Post</h4>
                     <div class="content">
                         <?php the_content(); ?>
                     </div>

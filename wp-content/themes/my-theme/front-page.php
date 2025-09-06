@@ -16,13 +16,17 @@ get_header();
         <div class="container position-relative">
             <h1 class="display-4 fw-bold"><?php bloginfo('name'); ?> 🚀</h1>
             <p class="lead mb-4"><?php bloginfo('description'); ?></p>
-            <a href="<?php echo site_url('/blog'); ?>" class="btn btn-warning btn-lg">Explore Blog</a>
+            <a href="<?php echo site_url('/about-page'); ?>" class="btn btn-warning btn-lg">Explore More</a>
         </div>
     </section>
 
     <!-- Feature Cards Section -->
-     <section class="feature-cards">
-        <div class="bg-dark bg-opacity-50 text-light p-5 shadow-sm">
+    <section class="feature-cards py-5 bg-dark text-white bg-opacity-50">
+        <div class="container text-center">
+            <h2 class="text-center mb-2">Why is it so great?</h2>
+            <p class="text-center text-muted mb-5">
+                A service is an intangible activity, process, or benefit that provides value to a customer without transferring ownership of a physical product.
+            </p>
             <div class="row g-4 text-center">
                 <?php if ( is_active_sidebar( 'feature-cards' ) ) : ?>
                     <?php dynamic_sidebar( 'feature-cards' ); ?>
@@ -32,6 +36,7 @@ get_header();
             </div>
         </div>
     </section>
+
 
     <!-- Latest Posts Section -->
     <?= do_shortcode("[get_blog_posts]");?>
