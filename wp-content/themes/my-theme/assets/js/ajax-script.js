@@ -203,37 +203,37 @@ jQuery(document).ready(function($){
 });
 
 // Contact Form
-jQuery(document).ready(function($) {
+// jQuery(document).ready(function($) {
 
-  $("#contact-form").on('submit', function(e) {
-    e.preventDefault()
+//   $("#contact-form").on('submit', function(e) {
+//     e.preventDefault()
     
-    var formArray = $(this).serializeArray();
-    formArray.push({ name: "action", value: "contact_form" });
-    formArray.push({ name: "nonce", value: ajax_ajax.nonce });
+//     var formArray = $(this).serializeArray();
+//     formArray.push({ name: "action", value: "contact_form" });
+//     formArray.push({ name: "nonce", value: ajax_ajax.nonce });
 
-    console.log(formArray);
+//     console.log(formArray);
 
-    $.ajax({
-      url: ajax_ajax.ajax_url,   
-      type: "POST",              
-      data: formArray,
-      success: function(response) {
-        console.log("Server says: ", response);
+//     $.ajax({
+//       url: ajax_ajax.ajax_url,   
+//       type: "POST",              
+//       data: formArray,
+//       success: function(response) {
+//         console.log("Server says: ", response);
 
-        if (response.success) {
-            alert(response.data.message);
-            window.location.href = ajax_ajax.home_url;  // Redirect after success
-        } else {
-            alert(response.data.message || 'Something went wrong.');
-        }
-      },
-      error: function(err) {
-        console.log("AJAX error:", err);
-      }
-    }); 
-  });
-});
+//         if (response.success) {
+//             alert(response.data.message);
+//             window.location.href = ajax_ajax.home_url;  // Redirect after success
+//         } else {
+//             alert(response.data.message || 'Something went wrong.');
+//         }
+//       },
+//       error: function(err) {
+//         console.log("AJAX error:", err);
+//       }
+//     }); 
+//   });
+// });
 
 
 

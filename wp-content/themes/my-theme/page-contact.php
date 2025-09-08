@@ -19,7 +19,9 @@ get_header();
     <!-- Row 2: Contact Form + Map -->
     <div class="row m-5 p-5 g-4 shadow-lg border-0 rounded-3 bg-secondary text-light">
       <div class="col-md-6 d-flex">
-        <div class="card flex-fill bg-light">
+        <?php echo do_shortcode('[contact_form_template]'); ?>
+
+        <!-- <div class="card flex-fill bg-light">
           <div class="card-body">
             <h2 class="card-title mb-4 text-center">Contact Us</h2>
 
@@ -58,7 +60,7 @@ get_header();
             </form>
 
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div class="col-md-6 d-flex">

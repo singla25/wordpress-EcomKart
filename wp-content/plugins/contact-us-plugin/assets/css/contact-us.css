@@ -1,0 +1,97 @@
+/* Contact Us Section */
+.contact-us {
+    display: flex;
+    justify-content: center;
+    padding: 25px 10px;
+    background-color: #f9f9f9;
+}
+
+.contact-us .form {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    /* box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); */
+    max-width: 800px;
+    width: 100%;
+}
+
+.contact-us .heading {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+/* Form Layout */
+.contact-us form .row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.contact-us form .input-group {
+    flex: 1; /* equal width */
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-us form .input-group.full-width {
+    flex: 1 1 100%;
+}
+
+.contact-us form label {
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #555;
+}
+
+/* Inputs and Textarea */
+/* Ensure your inputs override Bootstrap */
+.contact-us form .input-group input,
+.contact-us form .input-group textarea {
+    padding: 12px 15px;
+    border: 1px solid #7a6f6f;
+    border-radius: 10px !important;  /* force override */
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+
+.contact-us form .input-group textarea.full-width {
+    min-height: 100px; /* optional: make textarea taller */
+}
+
+.contact-us form .input-group input:focus,
+.contact-us form .input-group textarea:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 6px rgba(40, 167, 69, 0.2);
+}
+
+/* Submit Button */
+.contact-us form button.submit-btn {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 14px 40px; /* increased button size */
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 0 auto;
+}
+
+.contact-us form button.submit-btn:hover {
+    background-color: #218838;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .contact-us form .row {
+        flex-direction: column;
+    }
+}

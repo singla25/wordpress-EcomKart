@@ -496,46 +496,48 @@ function mytheme_delete_book() {
 add_action('wp_ajax_delete_book', 'mytheme_delete_book');
 add_action('wp_ajax_nopriv_delete_book', 'mytheme_delete_book');
 
-function mytheme_contact_form() {
+// function mytheme_contact_form() {
 
-    check_ajax_referer('ajax_nonce', 'nonce');
+//     check_ajax_referer('ajax_nonce', 'nonce');
 
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone'];
-    $subject = $_POST['subject'];
-    $topic = $_POST['topic'];
-    $query = $_POST['query'];
+//     $name = $_POST['name'];
+//     $email = $_POST['email'];
+//     $phone = $_POST['phone'];
+//     $subject = $_POST['subject'];
+//     $topic = $_POST['topic'];
+//     $query = $_POST['query'];
 
-    $commentdata = [
-        'comment_post_ID'      => 151, // connect thsese with contact page
-        'comment_author'       => $name,
-        'comment_author_email' => $email,
-        'comment_date'         => current_time('mysql'),          // Local time
-        'comment_date_gmt'     => current_time('mysql', 1),       // GMT time
-        'comment_content'      => $subject,
-        'comment_type'         => 'contact_form',
-        'user_id'              => 0,
-    ];
+//     $user_id = is_user_logged_in() ? get_current_user_id() : 0;
 
-    $comment_id = wp_insert_comment($commentdata);
+//     $commentdata = [
+//         'comment_post_ID'      => 151,             // connect thsese with contact page
+//         'comment_author'       => $name,
+//         'comment_author_email' => $email,
+//         'comment_date'         => current_time('mysql'),          // Local time
+//         'comment_date_gmt'     => current_time('mysql', 1),       // GMT time
+//         'comment_content'      => $subject,
+//         'comment_type'         => 'contact_form',
+//         'user_id'              => $user_id,          // Set logged-in user ID or 0
+//     ];
 
-    if ($comment_id) {
-        add_comment_meta($comment_id, 'phone', $phone);
-        add_comment_meta($comment_id, 'topic', $topic);
-        add_comment_meta($comment_id, 'query', $query);
+//     $comment_id = wp_insert_comment($commentdata);
 
-        wp_send_json_success([
-            'message' => 'Your form has been submitted. Our team will contact you soon!',
-        ]);
-    } else {
-        wp_send_json_error([
-            'message' => 'Failed to save form details.',
-        ]);
-    }
-}
-add_action('wp_ajax_contact_form', 'mytheme_contact_form');
-add_action('wp_ajax_nopriv_contact_form', 'mytheme_contact_form');
+//     if ($comment_id) {
+//         add_comment_meta($comment_id, 'phone', $phone);
+//         add_comment_meta($comment_id, 'topic', $topic);
+//         add_comment_meta($comment_id, 'query', $query);
+
+//         wp_send_json_success([
+//             'message' => 'Your form has been submitted. Our team will contact you soon!',
+//         ]);
+//     } else {
+//         wp_send_json_error([
+//             'message' => 'Failed to save form details.',
+//         ]);
+//     }
+// }
+// add_action('wp_ajax_contact_form', 'mytheme_contact_form');
+// add_action('wp_ajax_nopriv_contact_form', 'mytheme_contact_form');
 
 
 /**
@@ -1173,7 +1175,6 @@ function custom_post_results_shortcode($atts) {
 }
 add_shortcode('post_results', 'custom_post_results_shortcode');
 
-
 // Custom function to map attributes
 function get_current_attrname($postType ,$attribute){ 
     if ($postType == "books"){ 
@@ -1186,8 +1187,6 @@ function get_current_attrname($postType ,$attribute){
         return ($attribute == "category") ? "mobile-feature" : (($attribute == "tag") ? "mobile-price" : ''); 
     }
 }
-
-
 
 
 /**
@@ -1218,7 +1217,6 @@ function render_vendor_column($column, $post_id) {
 add_action('manage_books_posts_custom_column', 'render_vendor_column', 10, 2);
 
 
-
 /**
  * Create custom vendor role
  */
@@ -1234,7 +1232,7 @@ function create_vendor_role() {
         )
     );
 
-    if (current_user_can('vendor')) {
+    if (current_user_can('vendor')) {       // gave him no access to dashboard
         show_admin_bar(false);
     }
 }
