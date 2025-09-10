@@ -17,6 +17,8 @@ class Questionnaire_Core {
 
         // add_action('admin_post_generate_pdf', 'generate_pdf_handler');
         // add_action('admin_post_nopriv_generate_pdf', 'generate_pdf_handler'); // if frontend
+
+        
         add_filter('wp_mail_content_type', [$this, 'set_html_content_type']);
 
         add_filter( 'theme_page_templates', [ $this, 'add_template_to_dropdown' ] );

@@ -3,12 +3,39 @@ if (!defined('ABSPATH')) exit;
 
 class Custom_Form_Handler {
     public function __construct() {
-        add_action('init', [$this, 'handle_submission']);
         add_shortcode('custom_form', [$this, 'render_custom_form_shortcode']);
+        add_action('wp_enqueue_scripts', 'custom_form_enqueue_assets');
+        add_action('init', [$this, 'handle_submission']);
+    }
+
+    function custom_form_enqueue_assets() {
+        wp_enqueue_style('custom-form-style', plugin_dir_url(__FILE__) . '../assets/css/custom-form-user.css');
+    }
+
+    public function render_custom_form_shortcode($atts) {
+        if (!isset($atts['id'])) {
+            return 'Form ID not specified.';
+        }
+
+        $form_id = intval($atts['id']);
+        $form = get_post($form_id);
+
+        if (!$form || $form->post_type !== 'form') {
+            return 'Form not found.';
+        }
+
+        $fields_json = get_post_meta($form_id, 'form_fields', true);
+        $fields = json_decode($fields_json, true);
+
+        // Make $form and $fields available to template
+        ob_start();
+        include plugin_dir_path(__FILE__) . '../templates/frontend/frontend-form.php';
+        return ob_get_clean();
     }
 
     public function handle_submission() {
-        if (!isset($_POST['custom_form_submit'])) return;
+        if (!isset($_POST['custom_form_submit'])) 
+            return;
 
         global $wpdb;
 
@@ -61,27 +88,6 @@ class Custom_Form_Handler {
 
         wp_redirect(add_query_arg('form_submitted', 'true', get_permalink()));
         exit;
-    }
-
-    public function render_custom_form_shortcode($atts) {
-        if (!isset($atts['id'])) {
-            return 'Form ID not specified.';
-        }
-
-        $form_id = intval($atts['id']);
-        $form = get_post($form_id);
-
-        if (!$form || $form->post_type !== 'form') {
-            return 'Form not found.';
-        }
-
-        $fields_json = get_post_meta($form_id, 'form_fields', true);
-        $fields = json_decode($fields_json, true);
-
-        // Make $form and $fields available to template
-        ob_start();
-        include plugin_dir_path(__FILE__) . 'templates/frontend-form.php';
-        return ob_get_clean();
     }
 }
 

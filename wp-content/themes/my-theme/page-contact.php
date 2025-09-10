@@ -19,7 +19,7 @@ get_header();
     <!-- Row 2: Contact Form + Map -->
     <div class="row m-5 p-5 g-4 shadow-lg border-0 rounded-3 bg-secondary text-light">
       <div class="col-md-6 d-flex">
-        <?php echo do_shortcode('[contact_form_template]'); ?>
+        <?php echo do_shortcode('[custom_form id="325"]'); ?>
 
         <!-- <div class="card flex-fill bg-light">
           <div class="card-body">

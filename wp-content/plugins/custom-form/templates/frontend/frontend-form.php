@@ -2,7 +2,6 @@
 
 <form method="post" class="custom-form-frontend">
     <h3><?php echo esc_html($form->post_title); ?></h3>
-    <p><?php echo esc_html($form->post_content); ?></p>
 
     <input type="hidden" name="custom_form_id" value="<?php echo esc_attr($form_id); ?>">
 
@@ -19,27 +18,35 @@
             $field_name = "field_{$index}";
             $required_attr = $field['required'] ? 'required' : '';
 
-            if ($field['type'] === 'textarea'): ?>
-                <textarea name="<?php echo esc_attr($field_name); ?>" <?php echo $required_attr; ?>></textarea>
-            <?php elseif (in_array($field['type'], ['select', 'checkbox', 'radio'])): 
-                $options = $field['options'];
-                if ($field['type'] === 'select'): ?>
-                    <select name="<?php echo esc_attr($field_name); ?>" <?php echo $required_attr; ?>>
-                        <?php foreach ($options as $option): ?>
-                            <option value="<?php echo esc_attr($option); ?>"><?php echo esc_html($option); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                <?php else: ?>
-                    <?php foreach ($options as $option): ?>
-                        <label>
-                            <input type="<?php echo esc_attr($field['type']); ?>" name="<?php echo esc_attr($field_name); ?>[]" value="<?php echo esc_attr($option); ?>" <?php echo $required_attr; ?>>
-                            <?php echo esc_html($option); ?>
-                        </label><br>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            <?php else: ?>
-                <input type="<?php echo esc_attr($field['type']); ?>" name="<?php echo esc_attr($field_name); ?>" <?php echo $required_attr; ?>>
-            <?php endif; ?>
+            switch ($field['type']) {
+                case 'textarea':
+                    echo '<textarea name="' . esc_attr($field_name) . '" ' . $required_attr . '></textarea>';
+                    break;
+
+                case 'select':
+                    echo '<select name="' . esc_attr($field_name) . '" ' . $required_attr . '>';
+                    foreach ($field['options'] as $option) {
+                        echo '<option value="' . esc_attr($option) . '">' . esc_html($option) . '</option>';
+                    }
+                    echo '</select>';
+                    break;
+
+                case 'checkbox':
+                case 'radio':
+                    foreach ($field['options'] as $option) {
+                        echo '<label>';
+                        echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($field_name) . '[]" value="' . esc_attr($option) . '" ' . $required_attr . '>';
+                        echo esc_html($option);
+                        echo '</label><br>';
+                    }
+                    break;
+
+                default:
+                    // For text, email, number, etc.
+                    echo '<input type="' . esc_attr($field['type']) . '" name="' . esc_attr($field_name) . '" ' . $required_attr . '>';
+                    break;
+            }
+            ?>
         </div>
     <?php endforeach; ?>
 
