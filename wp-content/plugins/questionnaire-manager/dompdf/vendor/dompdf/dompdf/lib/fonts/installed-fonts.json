@@ -1,0 +1,7 @@
+{
+    "poppins": {
+        "300": "\/var\/www\/html\/82\/questionnaire\/wp-content\/plugins\/questionnaire-manager\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/poppins_300_1e74f8cffceec80c7acbd62f695514d0",
+        "normal": "\/var\/www\/html\/82\/questionnaire\/wp-content\/plugins\/questionnaire-manager\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/poppins_normal_248c57bfbdf54e4f9d39023b571bdb56",
+        "600": "poppins_600_b398d02f8dd055674d5bcc71fbc8ba01"
+    }
+}
