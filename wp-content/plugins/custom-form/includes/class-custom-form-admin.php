@@ -10,7 +10,9 @@ class Custom_Form_Admin {
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('init', [$this, 'register_custom_form_cpt']);
         add_action('add_meta_boxes', [$this, 'add_custom_meta_boxes_custom']);
-        add_action('admin_post_save_custom_form', [$this, 'handle_form_save']);   
+        add_action('save_post_custom_form', [$this, 'handle_form_save']);   
+        add_filter('manage_custom_form_posts_columns', [$this, 'add_shortcode_column']);
+        add_action('manage_custom_form_posts_custom_column', [$this, 'render_shortcode_column'], 10, 2);
     }
 
     public function enqueue_admin_assets() {
@@ -73,75 +75,142 @@ class Custom_Form_Admin {
         );
     }
 
-    public function render_admin_page() {
+    public function render_admin_page($post) {
+        $form_fields = get_post_meta($post->ID, 'form_fields', true) ?: [];
+        $form_fields = is_array($form_fields) ? $form_fields : json_decode($form_fields, true);
+        $fieldCount = count($form_fields);
         ?>
         <div class="wrap">
             <h1>🛠️ Custom Form Builder</h1>
-            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" class="custom-form">
-                <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
+            
+            <?php wp_nonce_field('save_form_meta', 'form_meta_nonce'); ?>
+            <input type="hidden" name="post_id" value="<?php echo esc_attr(get_the_ID()); ?>">
 
-                <div class="form-fields-section">
-                    <div class="form-group">
-                        <label for="form_purpose"><strong>Form Purpose</strong></label>
-                        <input type="text" name="form_purpose" id="form_purpose"
-                            value="<?php echo esc_attr(get_post_field('post_content', get_the_ID())); ?>" 
-                            required class="regular-text form-purpose-input">
-                    </div>
-
-                    <h3>Add Fields</h3>
-                    <div id="form-fields-container">
-                        <!-- You can pre-populate existing fields here using get_post_meta() -->
-                    </div>
-                    <button type="button" class="button" id="addField-btn">➕ Add Field</button>
+            <div class="form-fields-section">
+                <div class="form-group">
+                    <label for="form_purpose"><strong>Form Purpose</strong></label>
+                    <input type="text" name="form_purpose" id="form_purpose"
+                        value="<?php echo esc_attr(get_post_meta(get_the_ID(), 'form_purpose', true)); ?>" 
+                        required class="regular-text form-purpose-input">
                 </div>
-            </form>
+
+                <h3>Add Fields</h3>
+                
+                <div id="form-fields-container">
+                    <?php foreach ($form_fields as $index => $field): 
+                        $options = isset($field['options']) ? implode("\n", (array) $field['options']) : '';
+                    ?>
+                        <div class="form-field-wrapper">
+                            <div class="form-field-row" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                                <input type="text" name="fields[<?php echo $index; ?>][label]" 
+                                    value="<?php echo esc_attr($field['label'] ?? ''); ?>" 
+                                    placeholder="Field Label" required>
+
+                                <select name="fields[<?php echo $index; ?>][type]" class="field-type-select" required>
+                                    <option value="" <?php selected($field['type'] ?? '', ''); ?>>Choose type of Your field</option>
+                                    <option value="text" <?php selected($field['type'], 'text'); ?>>Text</option>
+                                    <option value="email" <?php selected($field['type'], 'email'); ?>>Email</option>
+                                    <option value="phone" <?php selected($field['type'], 'phone'); ?>>Phone</option>
+                                    <option value="number" <?php selected($field['type'], 'number'); ?>>Number</option>
+                                    <option value="textarea" <?php selected($field['type'], 'textarea'); ?>>Textarea</option>
+                                    <option value="select" <?php selected($field['type'], 'select'); ?>>Select</option>
+                                    <option value="checkbox" <?php selected($field['type'], 'checkbox'); ?>>Checkbox</option>
+                                    <option value="radio" <?php selected($field['type'], 'radio'); ?>>Radio</option>
+                                    <option value="button" <?php selected($field['type'], 'button'); ?>>Button</option>
+                                </select>
+
+                                <select name="fields[<?php echo $index; ?>][width]" required>
+                                    <option value="" <?php selected($field['width'] ?? '', ''); ?>>Choose width</option>
+                                    <option value="50%" <?php selected($field['width'], '50%'); ?>>Half (50%)</option>
+                                    <option value="100%" <?php selected($field['width'], '100%'); ?>>Full (100%)</option>
+                                </select>
+
+                                <label>
+                                    <input type="hidden" name="fields[<?php echo $index; ?>][required]" value="0">
+                                    <input type="checkbox" name="fields[<?php echo $index; ?>][required]" value="1" <?php checked($field['required'], 1); ?>> Required
+                                </label>
+
+                                <button type="button" class="remove-field-btn">❌ Remove</button>
+                            </div>
+
+                            <div class="form-field-options-row" style="margin-top: 10px; width: 30%;">
+                                <textarea name="fields[<?php echo $index; ?>][options]" class="field-options-textarea" 
+                                    placeholder="Enter one option per line" 
+                                    style="<?php echo in_array($field['type'], ['select', 'checkbox', 'radio']) ? '' : 'display:none;'; ?> width: 100%; min-height: 80px;"><?php echo esc_textarea($options); ?></textarea>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <button type="button" class="button" id="addField-btn">➕ Add Field</button>
+            </div>
         </div>
+
+        <script>
+            let fieldCount = <?php echo $fieldCount; ?>;
+        </script>
         <?php
     }
 
-    public function handle_form_save() {
-        if (!current_user_can('manage_options') || !isset($_POST['form_name'])) {
-            wp_die('Unauthorized user');
+    public function handle_form_save($post_id) {
+        // Prevent autosave and unauthorized edits
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_post', $post_id)) return;
+        if (!isset($_POST['form_meta_nonce']) || !wp_verify_nonce($_POST['form_meta_nonce'], 'save_form_meta')) return;
+
+        $form_purpose = sanitize_text_field($_POST['form_purpose'] ?? '');
+        $fields       = isset($_POST['fields']) ? (array) $_POST['fields'] : [];
+
+        if (!empty($fields)) {
+            foreach ($fields as $index => &$f) {
+                // Sanitize basic fields
+                $f['label']    = sanitize_text_field($f['label'] ?? '');
+                $f['type']     = sanitize_text_field($f['type'] ?? '');
+                $f['width']    = sanitize_text_field($f['width'] ?? '');
+                $f['required'] = !empty($f['required']) ? 1 : 0;
+
+                // Clean and process options
+                if (!empty($f['options'])) {
+                    $lines = explode("\n", $f['options']);
+                    $options_array = array_filter(array_map('trim', $lines));  // Remove empty lines
+
+                    // Re-save as space-separated string for consistency
+                    $f['options'] = implode(' ', $options_array);
+                } else {
+                    $f['options'] = '';
+                }
+            }
+            unset($f);  // Prevent reference issues
         }
+        
+        // Save clean data into post meta
+        update_post_meta($post_id, 'form_purpose', $form_purpose);
+        update_post_meta($post_id, 'form_fields', $fields);
+    }
 
-        $post_id      = intval($_POST['post_id']);
-        $form_purpose = sanitize_textarea_field($_POST['form_purpose']);
-        $fields       = $_POST['fields']; 
-        $user_id = get_current_user_id();
 
-        wp_update_post([
-            'ID'           => $post_id,
-            'post_content' => $form_purpose,
-            'post_author'  => $user_id,
-            'post_status'  => 'publish',
-            'post_type'    => 'form',
-            'post_date'   => current_time('mysql'),
-        ]);
 
-        // Sanitize and store fields in post meta
-        foreach ($fields as &$field) {
-            if (!empty($field['options'])) {
-                $field['options'] = array_filter(array_map('sanitize_text_field', explode("\n", $field['options'])));
-            } else {
-                $field['options'] = [];
+    public function add_shortcode_column($columns) {
+        $new = [];
+        foreach ($columns as $key => $value) {
+            $new[$key] = $value;
+            if ($key === 'title') {
+                $new['shortcode'] = __('Shortcode');
             }
         }
+        return $new;
+    }
 
-        update_post_meta($post_id, 'form_fields', wp_json_encode($fields));
-
-        echo '<div style="text-align:center; margin-top:50px; font-size:1.5em;">✅ Your form has been updated successfully!</div>';
-        echo '<script>
-                setTimeout(function() {
-                    window.location.href = "' . admin_url('post.php?post=' . $post_id . '&action=edit') . '";
-                }, 2000);
-            </script>';
-        exit;
+    public function render_shortcode_column($column, $post_id) {
+        if ($column === 'shortcode') {
+            echo '<code>[custom_form id="' . $post_id . '"]</code>';
+        }
     }
 
     public function render_all_forms_page() {
         // Fetch all forms
         $forms = get_posts([
-            'post_type'      => 'form',
+            'post_type'      => 'custom_form',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
         ]);

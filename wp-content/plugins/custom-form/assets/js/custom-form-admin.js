@@ -1,5 +1,8 @@
 jQuery(document).ready(function($) {
-    let fieldCount = 0;
+    // fieldCount comes from PHP
+    if (typeof fieldCount === 'undefined') {
+        fieldCount = 0;
+    }
 
     $('#addField-btn').on('click', function() {
         const fieldHtml = `
@@ -14,6 +17,7 @@ jQuery(document).ready(function($) {
                         <option value="phone">Phone</option>
                         <option value="number">Number</option>
                         <option value="textarea">Textarea</option>
+                        <option value="password">Password</option>
                         <option value="select">Select</option>
                         <option value="checkbox">Checkbox</option>
                         <option value="radio">Radio</option>

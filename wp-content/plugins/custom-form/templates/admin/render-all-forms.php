@@ -3,12 +3,6 @@
 <div class="wrap">
     <h1>📋 All Custom Forms</h1>
 
-    <?php if (isset($_GET['message']) && $_GET['message'] === 'success') : ?>
-        <div class="notice notice-success is-dismissible">
-            <p>✅ Your form has been registered successfully!</p>
-        </div>
-    <?php endif; ?>
-
     <table class="widefat striped">
         <thead>
             <tr>
@@ -22,19 +16,19 @@
             </tr>
         </thead>
         <tbody>
-            <?php if ($forms) : ?>
+            <?php if (!empty($forms)) : ?>
                 <?php foreach ($forms as $form) : ?>
                     <tr>
                         <td><?php echo esc_html($form->ID); ?></td>
                         <td><?php echo esc_html($form->post_title); ?></td>
-                        <td><?php echo esc_html($form->post_content); ?></td>
+                        <td><?php echo esc_html(get_post_meta($form->ID, 'form_purpose', true)); ?></td>
                         <td><?php echo esc_html(get_the_author_meta('display_name', $form->post_author)); ?></td>
                         <td>
                             <?php 
-                                $meta_value = get_post_meta($form->ID, 'form_fields', true); 
-                                $fields = json_decode($meta_value, true);
+                                $fields = get_post_meta($form->ID, 'form_fields', true); 
+                                $fields = is_array($fields) ? $fields : [];
 
-                                if (is_array($fields) && !empty($fields)) :
+                                if (!empty($fields)) :
                                     echo '<table class="widefat striped" style="margin-top:10px;">';
                                     echo '<thead><tr>';
                                     echo '<th>Label</th>';
@@ -44,17 +38,24 @@
                                     echo '<th>Options</th>';
                                     echo '</tr></thead>';
                                     echo '<tbody>';
+
                                     foreach ($fields as $field) :
+                                        $label = isset($field['label']) ? $field['label'] : '';
+                                        $type = isset($field['type']) ? $field['type'] : '';
+                                        $width = isset($field['width']) ? $field['width'] : '';
+                                        $required = isset($field['required']) && $field['required'] ? 'Yes' : 'No';
+                                        $options = isset($field['options']) ? (array) $field['options'] : [];
                                         ?>
                                         <tr>
-                                            <td><?php echo esc_html($field['label']); ?></td>
-                                            <td><?php echo esc_html($field['type']); ?></td>
-                                            <td><?php echo esc_html($field['width']); ?></td>
-                                            <td><?php echo ($field['required'] ? 'Yes' : 'No'); ?></td>
-                                            <td><?php echo esc_html(implode(', ', $field['options'])); ?></td>
+                                            <td><?php echo esc_html($label); ?></td>
+                                            <td><?php echo esc_html($type); ?></td>
+                                            <td><?php echo esc_html($width); ?></td>
+                                            <td><?php echo esc_html($required); ?></td>
+                                            <td><?php echo esc_html(implode(', ', $options)); ?></td>
                                         </tr>
                                         <?php
                                     endforeach;
+
                                     echo '</tbody></table>';
                                 else :
                                     echo 'No fields found.';
@@ -75,7 +76,7 @@
                 <?php endforeach; ?>
             <?php else : ?>
                 <tr>
-                    <td colspan="6">No forms found.</td>
+                    <td colspan="7">No forms found.</td>
                 </tr>
             <?php endif; ?>
         </tbody>
