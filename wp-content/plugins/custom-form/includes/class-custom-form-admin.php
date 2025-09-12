@@ -229,7 +229,7 @@ class Custom_Form_Admin {
         }
 
         // Pass data to template
-        include plugin_dir_path(__FILE__) . '../templates/admin/render-all-form-response.php';
+        include plugin_dir_path(__FILE__) . '../templates/render-all-form-response.php';
     }
 }
 
