@@ -4,20 +4,21 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class Questionnaire_Admin {
 
     public function __construct() {
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+        add_action('admin_menu', [$this, 'register_admin_menu']);
+        // add_action('admin_init', [$this, 'register_global_settings']);
+        add_action('admin_init', [$this, 'register_global_settings']); 
         add_action('add_meta_boxes', [$this, 'add_custom_meta_boxes']);
         add_action('save_post_question', [$this, 'save_question_meta']); 
         add_action('save_post_questionnaire_form', [$this, 'save_form_meta']); 
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
-        add_action('admin_menu', [$this, 'register_admin_menu']);
-        add_action('admin_init', [$this, 'register_global_settings']); 
+        
         add_filter('manage_questionnaire_form_posts_columns', [$this, 'add_shortcode_column']);
         add_action('manage_questionnaire_form_posts_custom_column', [$this, 'render_shortcode_column'], 10, 2);
-        // add_action('admin_init', [$this, 'register_global_settings']); 
 
         add_filter('manage_question_posts_columns', [$this, 'add_custom_column']);
         add_action('manage_question_posts_custom_column', [$this, 'render_custom_column'], 10, 2);
-
     }
+
     function enqueue_admin_scripts($hook) {
         global $post_type;
     
@@ -49,8 +50,6 @@ class Questionnaire_Admin {
             );
         }
     }
-    
-
  
 
     public function register_admin_menu() {
@@ -100,6 +99,7 @@ class Questionnaire_Admin {
         <?php
     }
     
+
     public function register_global_settings() {
         // --- Migration: Decode existing escaped HTML once ---
         $template = get_option('global_email_template');
@@ -225,7 +225,6 @@ class Questionnaire_Admin {
         );
  
     }
-    
 
   
     public function add_custom_meta_boxes() {
@@ -237,6 +236,7 @@ class Questionnaire_Admin {
             'normal',
             'high'
         );
+
         add_meta_box(
             'form_description',
             'Form Description',
@@ -251,7 +251,6 @@ class Questionnaire_Admin {
             'default'
         );
      
-
         add_meta_box(
             'form_steps',
             'Form Steps',
@@ -260,11 +259,8 @@ class Questionnaire_Admin {
             'normal',
             'default'
         );
-
-        
     }
 
-   
 
     public function render_question_meta_box($post) {
         $answer_type = get_post_meta($post->ID, '_answer_type', true);
@@ -335,7 +331,7 @@ class Questionnaire_Admin {
         <p><button class="button" id="add-answer">+ Add Answer</button></p>
     <?php
     }
-    
+
     public function save_question_meta($post_id) {
         if (!isset($_POST['question_meta_nonce']) || !wp_verify_nonce($_POST['question_meta_nonce'], 'save_question_meta')) {
             return;
@@ -369,260 +365,258 @@ class Questionnaire_Admin {
             delete_post_meta($post_id, '_answers');
         }
     }
-    
 
-        public function render_form_meta_box($post) {
-            $has_pre_inputs       = get_post_meta($post->ID, '_has_pre_inputs', true);
-            $pre_fields           = get_post_meta($post->ID, '_pre_fields', true) ?: [];
-            $raw_steps            = get_post_meta($post->ID, '_form_steps', true) ?: [];
-            $pre_inputs_position  = get_post_meta($post->ID, '_pre_inputs_position', true) ?: 'separate';
-            $show_categories      = get_post_meta($post->ID, '_show_categories', true);
-            $show_step_titles     = get_post_meta($post->ID, '_show_step_titles', true);
+    public function render_form_meta_box($post) {
+        $has_pre_inputs       = get_post_meta($post->ID, '_has_pre_inputs', true);
+        $pre_fields           = get_post_meta($post->ID, '_pre_fields', true) ?: [];
+        $raw_steps            = get_post_meta($post->ID, '_form_steps', true) ?: [];
+        $pre_inputs_position  = get_post_meta($post->ID, '_pre_inputs_position', true) ?: 'separate';
+        $show_categories      = get_post_meta($post->ID, '_show_categories', true);
+        $show_step_titles     = get_post_meta($post->ID, '_show_step_titles', true);
 
-            $questions = get_posts([
-                'post_type'   => 'question',
-                'numberposts' => -1,
-                'orderby'     => 'title',
-                'order'       => 'ASC'
-            ]);
+        $questions = get_posts([
+            'post_type'   => 'question',
+            'numberposts' => -1,
+            'orderby'     => 'title',
+            'order'       => 'ASC'
+        ]);
 
-            // Build steps array with title + questions
-            $steps = [];
-            if (empty($raw_steps)) {
-                $steps = [1 => ['title'=>'','questions'=>[]]];
-            } else {
-                foreach ($raw_steps as $sn => $data) {
-                    if (is_array($data)) {
-                        $title = $data['title'] ?? '';
-                        $questions_in_step = array_map('intval', (array) ($data['questions'] ?? []));
-                        $steps[$sn] = [
-                            'title'     => $title,
-                            'questions' => $questions_in_step
-                        ];
-                    } else {
-                        // backward compatibility
-                        $steps[$sn] = [
-                            'title'     => '',
-                            'questions' => array_map('intval', (array) $data)
-                        ];
-                    }
+        // Build steps array with title + questions
+        $steps = [];
+        if (empty($raw_steps)) {
+            $steps = [1 => ['title'=>'','questions'=>[]]];
+        } else {
+            foreach ($raw_steps as $sn => $data) {
+                if (is_array($data)) {
+                    $title = $data['title'] ?? '';
+                    $questions_in_step = array_map('intval', (array) ($data['questions'] ?? []));
+                    $steps[$sn] = [
+                        'title'     => $title,
+                        'questions' => $questions_in_step
+                    ];
+                } else {
+                    // backward compatibility
+                    $steps[$sn] = [
+                        'title'     => '',
+                        'questions' => array_map('intval', (array) $data)
+                    ];
                 }
-                ksort($steps, SORT_NUMERIC);
-                if (empty($steps)) $steps = [1 => ['title'=>'','questions'=>[]]];
             }
+            ksort($steps, SORT_NUMERIC);
+            if (empty($steps)) $steps = [1 => ['title'=>'','questions'=>[]]];
+        }
 
-            wp_nonce_field('save_form_meta', 'form_meta_nonce');
+        wp_nonce_field('save_form_meta', 'form_meta_nonce');
 
-            echo '<label><input type="checkbox" id="has_pre_inputs" name="has_pre_inputs" value="1" '.checked($has_pre_inputs,1,false).' /> This form requires pre-input fields before questions</label><br><br>';
-            echo '<label><input type="checkbox" id="show_categories" name="show_categories" value="1" '.checked($show_categories,1,false).' /> Show question categories as well </label><br><br>';
-            echo '<label><input type="checkbox" id="show_step_titles" name="show_step_titles" value="1" '.checked($show_step_titles,1,false).' /> Show Steps Title </label><br><br>';
+        echo '<label><input type="checkbox" id="has_pre_inputs" name="has_pre_inputs" value="1" '.checked($has_pre_inputs,1,false).' /> This form requires pre-input fields before questions</label><br><br>';
+        echo '<label><input type="checkbox" id="show_categories" name="show_categories" value="1" '.checked($show_categories,1,false).' /> Show question categories as well </label><br><br>';
+        echo '<label><input type="checkbox" id="show_step_titles" name="show_step_titles" value="1" '.checked($show_step_titles,1,false).' /> Show Steps Title </label><br><br>';
 
-            // ------------------
-            // Pre-inputs
-            // ------------------
-            echo '<div id="pre-inputs-wrapper-main" style="'.($has_pre_inputs ? '' : 'display:none;').'">';
-            echo '<div id="pre-inputs-wrapper">';
-            // echo '<p><strong>Display Options:</strong></p>';
-            // echo '<label><input type="radio" name="pre_inputs_position" value="with_step1" '.checked($pre_inputs_position,'with_step1',false).' /> Show with Step 1 questions</label><br>';
-            // echo '<label><input type="radio" name="pre_inputs_position" value="separate" '.checked($pre_inputs_position,'separate',false).' /> Show in separate step (Step 0)</label><br><br>';
+        // ------------------
+        // Pre-inputs
+        // ------------------
+        echo '<div id="pre-inputs-wrapper-main" style="'.($has_pre_inputs ? '' : 'display:none;').'">';
+        echo '<div id="pre-inputs-wrapper">';
+        // echo '<p><strong>Display Options:</strong></p>';
+        // echo '<label><input type="radio" name="pre_inputs_position" value="with_step1" '.checked($pre_inputs_position,'with_step1',false).' /> Show with Step 1 questions</label><br>';
+        // echo '<label><input type="radio" name="pre_inputs_position" value="separate" '.checked($pre_inputs_position,'separate',false).' /> Show in separate step (Step 0)</label><br><br>';
 
-            echo '<h4>Pre-Inputs</h4>';
-            if (empty($pre_fields)) {
-                $pre_fields[] = ['label'=>'','field_type'=>'text','required'=>0];
+        echo '<h4>Pre-Inputs</h4>';
+        if (empty($pre_fields)) {
+            $pre_fields[] = ['label'=>'','field_type'=>'text','required'=>0];
+        }
+
+        foreach ($pre_fields as $i => $f) {
+            echo '<div class="pre-field" style="margin: 10px 0px 20px 0px;">';
+            echo '<input type="text" name="pre_fields['.$i.'][label]" value="'.esc_attr($f['label']).'" placeholder="Field Label" style="margin: 0px 10px;" />';
+            echo '<select name="pre_fields['.$i.'][field_type]" style="margin: 0px 10px;">';
+
+            $types = [
+                'text'     => 'Text',
+                'email'    => 'Email',
+                'phone'    => 'Phone',
+                'textarea' => 'Textarea',
+                'date'     => 'Date',
+                'select'   => 'Select',
+                // 'radio'    => 'Radio',
+                'checkbox' => 'Checkbox'
+            ];
+            foreach ($types as $k=>$v) {
+                echo '<option value="'.$k.'" '.selected($f['field_type'],$k,false).'>'.$v.'</option>';
             }
-
-
-            foreach ($pre_fields as $i => $f) {
-                echo '<div class="pre-field" style="margin: 10px 0px 20px 0px;">';
-                echo '<input type="text" name="pre_fields['.$i.'][label]" value="'.esc_attr($f['label']).'" placeholder="Field Label" style="margin: 0px 10px;" />';
-                echo '<select name="pre_fields['.$i.'][field_type]" style="margin: 0px 10px;">';
-
-                $types = [
-                    'text'     => 'Text',
-                    'email'    => 'Email',
-                    'phone'    => 'Phone',
-                    'textarea' => 'Textarea',
-                    'date'     => 'Date',
-                    'select'   => 'Select',
-                    // 'radio'    => 'Radio',
-                    'checkbox' => 'Checkbox'
-                ];
-                foreach ($types as $k=>$v) {
-                    echo '<option value="'.$k.'" '.selected($f['field_type'],$k,false).'>'.$v.'</option>';
-                }
-                // echo '</select>';
-                // echo '<label style="margin: 0px 10px;"><input type="checkbox" name="pre_fields['.$i.'][required]" value="1" '.checked($f['required'],1,false).' /> Required</label>';
-                // echo '<button type="button" class="button remove-pre-field" style="margin: 0px 10px;">Remove</button>';
-                // echo '</div>';
-                echo '</select>';
-
-                $layout = $f['layout'] ?? 'full';
-                echo '<select name="pre_fields['.$i.'][layout]" style="margin: 0px 10px;">
-                        <option value="full" '.selected($layout,'full',false).'>Full Width</option>
-                        <option value="half" '.selected($layout,'half',false).'>Half Width</option>
-                        <option value="combine" '.selected($layout,'combine',false).'>Combine Width</option>
-                      </select>';
-
-                echo '<label style="margin: 0px 10px;"><input type="checkbox" name="pre_fields['.$i.'][required]" value="1" '.checked($f['required'],1,false).' /> Required</label>';
-                echo '<button type="button" class="button remove-pre-field" style="margin: 0px 10px;">Remove</button>';
-            
-                // Options textarea for select, radio, checkbox
-                $options = isset($f['options']) ? implode("\n", (array)$f['options']) : '';
-                echo '<div class="field-options" style="'.(in_array($f['field_type'],['select','radio','checkbox']) ? '' : 'display:none;').' margin:10px 0;">';
-                echo '<textarea name="pre_fields['.$i.'][options]" placeholder="Enter options (one per line)" style="width:250px; height:80px;">'.esc_textarea($options).'</textarea>';
-                echo '</div>';
-            
-                echo '</div>';
-            }
-            echo '</div>';
-            echo '<button type="button" class="button add-pre-field"  style="margin-top: 13px;">+ Add Pre Field</button>';
-            echo '</div>';
-
-            // ------------------
-            // Steps
-            // ------------------
-            // echo '<div id="form-steps-wrapper">';
-            // foreach ($steps as $step_num => $stepData) {
-            //     $stepTitle   = $stepData['title'] ?? '';
-            //     $selectedIds = $stepData['questions'] ?? [];
-
-            //     echo '<div class="form-step" data-step="'.intval($step_num).'">';
-            //     echo '<h4>Step '.intval($step_num).'</h4>';
-            //     echo '<input type="text" name="form_steps[' . intval($step_num) . '][title]" 
-            //         value="' . esc_attr($stepTitle) . '" 
-            //         placeholder="Step Title" 
-            //         style="width:100%;margin-bottom:8px;" />';
-
-            //     echo '<select class="form-step-select" name="form_steps['.intval($step_num).'][questions][]" multiple="multiple" style="width:100%;">';
-            //     foreach ($questions as $q) {
-            //         $already_chosen_elsewhere = false;
-            //         foreach ($steps as $sn => $sdata) {
-            //             if ($sn != $step_num && in_array($q->ID, $sdata['questions'], true)) {
-            //                 $already_chosen_elsewhere = true;
-            //                 break;
-            //             }
-            //         }
-            //         if ($already_chosen_elsewhere) continue;
-
-            //         $selected_attr = in_array($q->ID, $selectedIds, true) ? 'selected' : '';
-            //         echo '<option value="'.intval($q->ID).'" '.$selected_attr.'>'.esc_html($q->post_title).'</option>';
-            //     }
-            //     echo '</select>';
-            //     echo '</div>';
-            // }
+            // echo '</select>';
+            // echo '<label style="margin: 0px 10px;"><input type="checkbox" name="pre_fields['.$i.'][required]" value="1" '.checked($f['required'],1,false).' /> Required</label>';
+            // echo '<button type="button" class="button remove-pre-field" style="margin: 0px 10px;">Remove</button>';
             // echo '</div>';
-            // echo '<button type="button" class="button" id="add-step" style="margin-top: 13px;">+ Add Step</button>';
-            // ------------------
-// Steps
-// ------------------
-            echo '<div id="form-steps-wrapper">';
-            foreach ($steps as $step_num => $stepData) {
-                $stepTitle   = $stepData['title'] ?? '';
-                $selectedIds = $stepData['questions'] ?? [];
-                $stepDescription = $stepData['description'] ?? '';
+            echo '</select>';
 
-                echo '<div class="form-step" data-step="'.intval($step_num).'">';
-                echo '<h4>Step '.intval($step_num).'</h4>';
-                echo '<input type="text" name="form_steps[' . intval($step_num) . '][title]" 
-                    value="' . esc_attr($stepTitle) . '" 
-                    placeholder="Step Title" 
-                    style="width:100%;margin-bottom:8px;" />';
-                     // Description
-                echo '<textarea name="form_steps['.intval($step_num).'][description]" 
-                placeholder="Step Description" 
-                style="width:100%;height:60px;margin-bottom:8px;">'
-                .esc_textarea($stepDescription).'</textarea>';
+            $layout = $f['layout'] ?? 'full';
+            echo '<select name="pre_fields['.$i.'][layout]" style="margin: 0px 10px;">
+                    <option value="full" '.selected($layout,'full',false).'>Full Width</option>
+                    <option value="half" '.selected($layout,'half',false).'>Half Width</option>
+                    <option value="combine" '.selected($layout,'combine',false).'>Combine Width</option>
+                    </select>';
 
-                // Action buttons
-                echo '<div style="margin-bottom:6px;">';
-                echo '<button type="button" class="button select-all">Select All</button> ';
-                echo '<button type="button" class="button deselect-all">Clear</button>';
-                echo '</div>';
-
-                echo '<select class="form-step-select" name="form_steps['.intval($step_num).'][questions][]" multiple="multiple" style="width:100%;">';
-                foreach ($questions as $q) {
-                    $already_chosen_elsewhere = false;
-                    foreach ($steps as $sn => $sdata) {
-                        if ($sn != $step_num && in_array($q->ID, $sdata['questions'], true)) {
-                            $already_chosen_elsewhere = true;
-                            break;
-                        }
-                    }
-                    if ($already_chosen_elsewhere) continue;
-
-                    $selected_attr = in_array($q->ID, $selectedIds, true) ? 'selected' : '';
-                    echo '<option value="'.intval($q->ID).'" '.$selected_attr.'>'.esc_html($q->post_title).'</option>';
-                }
-                echo '</select>';
-                echo '</div>';
-            }
-            echo '</div>';
-            echo '<button type="button" class="button" id="add-step" style="margin-top: 13px;">+ Add Step</button>';
-
-        }
-
-
-        // ------------------
-        // Save Meta Box
-        // ------------------
-        public function save_form_meta($post_id) {
-            if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-            if (! current_user_can('edit_post', $post_id)) return;
-            if (! isset($_POST['form_meta_nonce']) || ! wp_verify_nonce($_POST['form_meta_nonce'], 'save_form_meta')) {
-                return;
-            }
-
-            // Save description
-            if (isset($_POST['form_description'])) {
-                update_post_meta($post_id, '_form_description', sanitize_textarea_field($_POST['form_description']));
-            }
-
-            update_post_meta($post_id, '_has_pre_inputs', !empty($_POST['has_pre_inputs']) ? 1 : 0);
-            update_post_meta($post_id, '_show_categories', !empty($_POST['show_categories']) ? 1 : 0);
-            update_post_meta($post_id, '_show_step_titles', !empty($_POST['show_step_titles']) ? 1 : 0);
-
-            if (!empty($_POST['pre_inputs_position'])) {
-                update_post_meta($post_id, '_pre_inputs_position', sanitize_text_field($_POST['pre_inputs_position']));
-            } else {
-                delete_post_meta($post_id, '_pre_inputs_position');
-            }
-
-            if (!empty($_POST['pre_fields']) && is_array($_POST['pre_fields'])) {
-                $fields = [];
-                foreach ($_POST['pre_fields'] as $f) {
-                    $options = [];
-                    if (!empty($f['options'])) {
-                        $lines = explode("\n", $f['options']);
-                        $options = array_filter(array_map('trim', $lines));
-                    }
+            echo '<label style="margin: 0px 10px;"><input type="checkbox" name="pre_fields['.$i.'][required]" value="1" '.checked($f['required'],1,false).' /> Required</label>';
+            echo '<button type="button" class="button remove-pre-field" style="margin: 0px 10px;">Remove</button>';
         
-                    $fields[] = [
-                        'label'      => sanitize_text_field($f['label'] ?? ''),
-                        'field_type' => sanitize_text_field($f['field_type'] ?? 'text'),
-                        'required'   => !empty($f['required']) ? 1 : 0,
-                        'layout'     => sanitize_text_field($f['layout'] ?? 'full'),
-                        'options'    => $options
-                    ];
-                }
-                update_post_meta($post_id, '_pre_fields', $fields);
-            } else {
-                delete_post_meta($post_id, '_pre_fields');
-            }
-
-            if (!empty($_POST['form_steps']) && is_array($_POST['form_steps'])) {
-                $clean_steps = [];
-                foreach ($_POST['form_steps'] as $step_num => $stepData) {
-                    $clean_steps[$step_num] = [
-                        'title'     => sanitize_text_field($stepData['title'] ?? ''),
-                        'description' => sanitize_textarea_field($stepData['description'] ?? ''),
-                        'questions' => array_map('intval', (array) ($stepData['questions'] ?? []))
-                    ];
-                }
-                update_post_meta($post_id, '_form_steps', $clean_steps);
-            } else {
-                delete_post_meta($post_id, '_form_steps');
-            }
+            // Options textarea for select, radio, checkbox
+            $options = isset($f['options']) ? implode("\n", (array)$f['options']) : '';
+            echo '<div class="field-options" style="'.(in_array($f['field_type'],['select','radio','checkbox']) ? '' : 'display:none;').' margin:10px 0;">';
+            echo '<textarea name="pre_fields['.$i.'][options]" placeholder="Enter options (one per line)" style="width:250px; height:80px;">'.esc_textarea($options).'</textarea>';
+            echo '</div>';
+        
+            echo '</div>';
         }
+        echo '</div>';
+        echo '<button type="button" class="button add-pre-field"  style="margin-top: 13px;">+ Add Pre Field</button>';
+        echo '</div>';
+
+        // ------------------
+        // Steps
+        // ------------------
+        // echo '<div id="form-steps-wrapper">';
+        // foreach ($steps as $step_num => $stepData) {
+        //     $stepTitle   = $stepData['title'] ?? '';
+        //     $selectedIds = $stepData['questions'] ?? [];
+
+        //     echo '<div class="form-step" data-step="'.intval($step_num).'">';
+        //     echo '<h4>Step '.intval($step_num).'</h4>';
+        //     echo '<input type="text" name="form_steps[' . intval($step_num) . '][title]" 
+        //         value="' . esc_attr($stepTitle) . '" 
+        //         placeholder="Step Title" 
+        //         style="width:100%;margin-bottom:8px;" />';
+
+        //     echo '<select class="form-step-select" name="form_steps['.intval($step_num).'][questions][]" multiple="multiple" style="width:100%;">';
+        //     foreach ($questions as $q) {
+        //         $already_chosen_elsewhere = false;
+        //         foreach ($steps as $sn => $sdata) {
+        //             if ($sn != $step_num && in_array($q->ID, $sdata['questions'], true)) {
+        //                 $already_chosen_elsewhere = true;
+        //                 break;
+        //             }
+        //         }
+        //         if ($already_chosen_elsewhere) continue;
+
+        //         $selected_attr = in_array($q->ID, $selectedIds, true) ? 'selected' : '';
+        //         echo '<option value="'.intval($q->ID).'" '.$selected_attr.'>'.esc_html($q->post_title).'</option>';
+        //     }
+        //     echo '</select>';
+        //     echo '</div>';
+        // }
+        // echo '</div>';
+        // echo '<button type="button" class="button" id="add-step" style="margin-top: 13px;">+ Add Step</button>';
+        // ------------------
+        // Steps
+        // ------------------
+        echo '<div id="form-steps-wrapper">';
+        foreach ($steps as $step_num => $stepData) {
+            $stepTitle   = $stepData['title'] ?? '';
+            $selectedIds = $stepData['questions'] ?? [];
+            $stepDescription = $stepData['description'] ?? '';
+
+            echo '<div class="form-step" data-step="'.intval($step_num).'">';
+            echo '<h4>Step '.intval($step_num).'</h4>';
+            echo '<input type="text" name="form_steps[' . intval($step_num) . '][title]" 
+                value="' . esc_attr($stepTitle) . '" 
+                placeholder="Step Title" 
+                style="width:100%;margin-bottom:8px;" />';
+                    // Description
+            echo '<textarea name="form_steps['.intval($step_num).'][description]" 
+            placeholder="Step Description" 
+            style="width:100%;height:60px;margin-bottom:8px;">'
+            .esc_textarea($stepDescription).'</textarea>';
+
+            // Action buttons
+            echo '<div style="margin-bottom:6px;">';
+            echo '<button type="button" class="button select-all">Select All</button> ';
+            echo '<button type="button" class="button deselect-all">Clear</button>';
+            echo '</div>';
+
+            echo '<select class="form-step-select" name="form_steps['.intval($step_num).'][questions][]" multiple="multiple" style="width:100%;">';
+            foreach ($questions as $q) {
+                $already_chosen_elsewhere = false;
+                foreach ($steps as $sn => $sdata) {
+                    if ($sn != $step_num && in_array($q->ID, $sdata['questions'], true)) {
+                        $already_chosen_elsewhere = true;
+                        break;
+                    }
+                }
+                if ($already_chosen_elsewhere) continue;
+
+                $selected_attr = in_array($q->ID, $selectedIds, true) ? 'selected' : '';
+                echo '<option value="'.intval($q->ID).'" '.$selected_attr.'>'.esc_html($q->post_title).'</option>';
+            }
+            echo '</select>';
+            echo '</div>';
+        }
+        echo '</div>';
+        echo '<button type="button" class="button" id="add-step" style="margin-top: 13px;">+ Add Step</button>';
+
+    }
+
+
+    // ------------------
+    // Save Meta Box
+    // ------------------
+    public function save_form_meta($post_id) {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (! current_user_can('edit_post', $post_id)) return;
+        if (! isset($_POST['form_meta_nonce']) || ! wp_verify_nonce($_POST['form_meta_nonce'], 'save_form_meta')) {
+            return;
+        }
+
+        // Save description
+        if (isset($_POST['form_description'])) {
+            update_post_meta($post_id, '_form_description', sanitize_textarea_field($_POST['form_description']));
+        }
+
+        update_post_meta($post_id, '_has_pre_inputs', !empty($_POST['has_pre_inputs']) ? 1 : 0);
+        update_post_meta($post_id, '_show_categories', !empty($_POST['show_categories']) ? 1 : 0);
+        update_post_meta($post_id, '_show_step_titles', !empty($_POST['show_step_titles']) ? 1 : 0);
+
+        if (!empty($_POST['pre_inputs_position'])) {
+            update_post_meta($post_id, '_pre_inputs_position', sanitize_text_field($_POST['pre_inputs_position']));
+        } else {
+            delete_post_meta($post_id, '_pre_inputs_position');
+        }
+
+        if (!empty($_POST['pre_fields']) && is_array($_POST['pre_fields'])) {
+            $fields = [];
+            foreach ($_POST['pre_fields'] as $f) {
+                $options = [];
+                if (!empty($f['options'])) {
+                    $lines = explode("\n", $f['options']);
+                    $options = array_filter(array_map('trim', $lines));
+                }
+    
+                $fields[] = [
+                    'label'      => sanitize_text_field($f['label'] ?? ''),
+                    'field_type' => sanitize_text_field($f['field_type'] ?? 'text'),
+                    'required'   => !empty($f['required']) ? 1 : 0,
+                    'layout'     => sanitize_text_field($f['layout'] ?? 'full'),
+                    'options'    => $options
+                ];
+            }
+            update_post_meta($post_id, '_pre_fields', $fields);
+        } else {
+            delete_post_meta($post_id, '_pre_fields');
+        }
+
+        if (!empty($_POST['form_steps']) && is_array($_POST['form_steps'])) {
+            $clean_steps = [];
+            foreach ($_POST['form_steps'] as $step_num => $stepData) {
+                $clean_steps[$step_num] = [
+                    'title'     => sanitize_text_field($stepData['title'] ?? ''),
+                    'description' => sanitize_textarea_field($stepData['description'] ?? ''),
+                    'questions' => array_map('intval', (array) ($stepData['questions'] ?? []))
+                ];
+            }
+            update_post_meta($post_id, '_form_steps', $clean_steps);
+        } else {
+            delete_post_meta($post_id, '_form_steps');
+        }
+    }
 
 
     public function add_shortcode_column($columns) {

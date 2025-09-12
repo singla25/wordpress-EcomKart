@@ -28,79 +28,88 @@ class Custom_Form_Handler {
 
         ob_start();
         ?>
-        <form method="post" class="custom-form" action="">
-            <?php wp_nonce_field('submit_custom_form', 'custom_form_nonce'); ?>
+        <div class="custom-form-container">
+            <h2 class="form-heading"><?php echo esc_html($form->post_title); ?></h2>
+            <form method="post" class="custom-form" action="">
+                <?php wp_nonce_field('submit_custom_form', 'custom_form_nonce'); ?>
+                <input type="hidden" name="custom_form_id" value="<?php echo esc_attr($form_id); ?>">
 
-            <input type="hidden" name="custom_form_id" value="<?php echo esc_attr($form_id); ?>">
+                <?php
+                $combined_fields_group = [];  // Collect combined fields
 
-            <?php
-            if (!empty($fields)) {
                 foreach ($fields as $index => $field) {
-                    $label = isset($field['label']) ? $field['label'] : '';
-                    $type = isset($field['type']) ? $field['type'] : 'text';
+                    $label = sanitize_text_field($field['label'] ?? '');
+                    $type = sanitize_text_field($field['type'] ?? 'text');
                     $required = !empty($field['required']) ? 'required' : '';
-                    $width_class = (isset($field['width']) && $field['width'] === '50%') ? 'field-width-50' : 'field-width-100';
+                    $width = $field['width'] ?? '100%';
+                    $combined = $field['combined'] ?? false;
 
-                    echo '<div class="' . esc_attr($width_class) . '">';
+                    $width_class = ($width === '50%') ? 'field-width-50' : 'field-width-100';
 
-                    switch ($type) {
-                        case 'text':
-                            echo '<label>' . esc_html($label) . ' <input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '></label>';
-                            break;
-                        case 'email':
-                            echo '<label>' . esc_html($label) . ' <input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '></label>';
-                            break;
-                        case 'number':
-                            echo '<label>' . esc_html($label) . ' <input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '></label>';
-                            break;
-                        case 'phone':
-                            echo '<label>' . esc_html($label) . ' <input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '></label>';
-                            break;
-                        case 'password':
-                            echo '<label>' . esc_html($label) . ' <input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '></label>';
-                            break;
-                        case 'textarea':
-                            echo '<label>' . esc_html($label) . ' <textarea name="field_' . $index . '" ' . $required . '></textarea></label>';
-                            break;
-                        case 'select':
-                            echo '<label>' . esc_html($label) . '<select name="field_' . $index . '" ' . $required . '>';
-                            foreach ($options as $option) {
-                                echo '<option value="' . esc_attr($option) . '">' . esc_html($option) . '</option>';
-                            }
-                            echo '</select></label>';
-                            break;
-                        case 'checkbox':
-                        case 'radio':
-                            echo '<label>' . esc_html($label) . '</label><br>';
-
-                            $options = isset($field['options']) ? $field['options'] : '';
-
-                            // Convert string into clean array of options
-                            $options_array = explode(' ', trim($options));
-
-                            foreach ($options_array as $option_value) {
-                                $input_name = 'field_' . $index;
-                                if ($type === 'checkbox') {
-                                    $input_name .= '[]';  // For multiple checkbox values
-                                }
-
-                                echo '<label style="margin-right:15px;">';
-                                echo '<input type="' . esc_attr($type) . '" name="' . esc_attr($input_name) . '" value="' . esc_attr($option_value) . '"> ';
-                                echo esc_html($option_value);
-                                echo '</label>';
-                            }
-                            break;
-
-
+                    if ($combined) {
+                        $combined_fields_group[] = ['index' => $index, 'field' => $field];
+                        continue;
                     }
-                    echo '</div>'; // close width wrapper
+
+                    echo '<div class="form-field ' . esc_attr($width_class) . '">';
+                    echo '<label>' . esc_html(ucfirst($label)) . '</label>';
+
+                    if (in_array($type, ['text', 'email', 'number', 'phone', 'password'])) {
+                        echo '<input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '>';
+                    } elseif ($type === 'textarea') {
+                        echo '<textarea name="field_' . $index . '" ' . $required . '></textarea>';
+                    } elseif ($type === 'select') {
+                        $options = explode(' ', trim($field['options'] ?? ''));
+                        echo '<select name="field_' . $index . '" ' . $required . '>';
+                        foreach ($options as $option) {
+                            echo '<option value="' . esc_attr($option) . '">' . esc_html($option) . '</option>';
+                        }
+                        echo '</select>';
+                    } elseif ($type === 'checkbox' || $type === 'radio') {
+                        $options = explode(' ', trim($field['options'] ?? ''));
+                        $group_class = $type === 'checkbox' ? 'checkbox-group' : 'radio-group';
+                        echo '<div class="' . $group_class . '">';
+                        foreach ($options as $option) {
+                            $input_name = 'field_' . $index;
+                            if ($type === 'checkbox') $input_name .= '[]';
+
+                            echo '<label>';
+                            echo '<input type="' . esc_attr($type) . '" name="' . esc_attr($input_name) . '" value="' . esc_attr($option) . '"> ';
+                            echo " " . esc_html($option);
+                            echo '</label>';
+                        }
+                        echo '</div>';
+                    }
+
+                    echo '</div>';
                 }
-            } else {
-                echo '<p>No fields found.</p>';
-            }
-            ?>
-            <br><button type="submit" name="custom_form_submit" class="button">Submit</button>
-        </form>
+
+                // Render combined fields in one row
+                if (!empty($combined_fields_group)) {
+                    echo '<div class="form-field field-width-100" style="display: flex; gap: 20px;">';
+                    foreach ($combined_fields_group as $combined_field) {
+                        $index = $combined_field['index'];
+                        $field = $combined_field['field'];
+                        $label = sanitize_text_field($field['label'] ?? '');
+                        $type = sanitize_text_field($field['type'] ?? 'text');
+                        $required = !empty($field['required']) ? 'required' : '';
+
+                        echo '<div class="field-width-50">';
+                        echo '<label>' . esc_html($label) . '</label>';
+
+                        if (in_array($type, ['text', 'email', 'number', 'phone', 'password'])) {
+                            echo '<input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '>';
+                        } elseif ($type === 'textarea') {
+                            echo '<textarea name="field_' . $index . '" ' . $required . '></textarea>';
+                        }
+                        echo '</div>';
+                    }
+                    echo '</div>';
+                }
+                ?>
+                <button type="submit" name="custom_form_submit">Submit</button>
+            </form>
+        </div>
         <?php
         return ob_get_clean();
     }

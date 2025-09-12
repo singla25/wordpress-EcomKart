@@ -16,7 +16,7 @@ jQuery(document).ready(function($) {
                 <button class="button remove-answer">Remove</button>
             </div>`;
         wrapper.append(html);
-                     index++;
+        index++;
     });
 
 

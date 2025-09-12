@@ -37,7 +37,7 @@ class Custom_Form_Admin {
             'Responses',
             'manage_options',
             'custom_form_responses',
-            [$this, 'render_all_forms_page']
+            [$this, 'render_all_form_responses']
         );
     }
 
@@ -188,8 +188,6 @@ class Custom_Form_Admin {
         update_post_meta($post_id, 'form_fields', $fields);
     }
 
-
-
     public function add_shortcode_column($columns) {
         $new = [];
         foreach ($columns as $key => $value) {
@@ -207,7 +205,9 @@ class Custom_Form_Admin {
         }
     }
 
-    public function render_all_forms_page() {
+    public function render_all_form_responses() {
+        global $wpdb;
+
         // Fetch all forms
         $forms = get_posts([
             'post_type'      => 'custom_form',
@@ -215,8 +215,21 @@ class Custom_Form_Admin {
             'posts_per_page' => -1,
         ]);
 
-        // Pass $forms to template
-        include plugin_dir_path(__FILE__) . '../templates/admin/render-all-forms.php';
+        // If user requested to view responses
+        if (isset($_POST['form_id'])) {
+            $form_id = intval($_POST['form_id']);
+
+            // Fetch submissions for this form
+            $responses = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
+                    $form_id
+                )
+            );
+        }
+
+        // Pass data to template
+        include plugin_dir_path(__FILE__) . '../templates/admin/render-all-form-response.php';
     }
 }
 
