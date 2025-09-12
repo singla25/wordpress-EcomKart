@@ -3,6 +3,23 @@
 <div class="wrap">
     <h1>📋 All Custom Form Responses</h1>
 
+    <!-- Filter Form -->
+    <form method="get" style="margin-bottom: 20px;">
+        <input type="hidden" name="page" value="<?php echo esc_attr($_GET['page']); ?>"> <!-- Preserve admin page slug -->
+        
+        <label for="form_name_filter">Filter by Form Name:</label>
+        <select name="form_name_filter" id="form_name_filter">
+            <option value="">-- All Forms --</option>
+            <?php foreach ($forms as $form_name) : ?>
+                <option value="<?php echo esc_attr($form_name->post_title); ?>" <?php selected(isset($_GET['form_name_filter']) ? $_GET['form_name_filter'] : '', $form_name->post_title); ?>>
+                    <?php echo esc_html($form_name->post_title); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="button">🔍 Apply Filter</button>
+    </form>
+
+    <!-- Forms Table -->
     <table class="widefat striped">
         <thead>
             <tr>
@@ -14,8 +31,19 @@
             </tr>
         </thead>
         <tbody>
-            <?php if (!empty($forms)) : ?>
-                <?php foreach ($forms as $form) : ?>
+            <?php
+            // Apply Filter if Set
+            $filtered_forms = $forms;
+            
+            if (!empty($_GET['form_name_filter'])) {
+                $filtered_forms = array_filter($forms, function($form) {
+                    return $form->post_title === sanitize_text_field($_GET['form_name_filter']);
+                });
+            }
+            ?>
+
+            <?php if (!empty($filtered_forms)) : ?>
+                <?php foreach ($filtered_forms as $form) : ?>
                     <tr>
                         <td><?php echo esc_html($form->ID); ?></td>
                         <td><?php echo esc_html($form->post_title); ?></td>

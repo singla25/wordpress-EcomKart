@@ -39,6 +39,15 @@ class Custom_Form_Admin {
             'custom_form_responses',
             [$this, 'render_all_form_responses']
         );
+
+        add_submenu_page(
+            'custom_form_builder',
+            'Settings',
+            'Setting',
+            'manage_options',
+            'custom_form_setting',
+            [$this, 'render_setting_page']
+        );
     }
 
     public function register_custom_form_cpt() {
@@ -231,5 +240,93 @@ class Custom_Form_Admin {
         // Pass data to template
         include plugin_dir_path(__FILE__) . '../templates/render-all-form-response.php';
     }
+
+    public function render_setting_page() {
+        global $wpdb;
+
+        // Fetch all forms
+        $forms = get_posts([
+            'post_type'      => 'custom_form',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+        ]);
+
+        $filtered_responses = [];
+        $selected_form_id   = 0;
+        $selected_form_name = '';
+
+        // Handle form filter (GET)
+        if (!empty($_GET['form_name_filter'])) {
+            $form_name_filter = sanitize_text_field($_GET['form_name_filter']);
+
+            // Find the form ID by name
+            foreach ($forms as $form) {
+                if ($form->post_title === $form_name_filter) {
+                    $selected_form_id   = $form->ID;
+                    $selected_form_name = $form->post_title;
+
+                    // Fetch responses
+                    $filtered_responses = $wpdb->get_results(
+                        $wpdb->prepare(
+                            "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
+                            $selected_form_id
+                        )
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        // Handle CSV Export Request
+        if (isset($_GET['export_csv']) && $selected_form_id) {
+            $this->export_responses_as_csv($filtered_responses, $selected_form_name);
+            exit;
+        }
+
+        // Pass data to template
+        include plugin_dir_path(__FILE__) . '../templates/render-setting-page.php';
+    }
+
+    private function export_responses_as_csv($responses, $form_name) {
+        if (empty($responses)) {
+            wp_die('No responses to export.');
+        }
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="form_responses_' . sanitize_title($form_name) . '.csv"');
+
+        $output = fopen('php://output', 'w');
+
+        // Add CSV headers
+        fputcsv($output, ['Submission ID', 'Form Name', 'Fields Data (meta_key => meta_value)', 'Submitted At']);
+
+        global $wpdb;
+
+        foreach ($responses as $response) {
+            $meta_items = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT meta_key, meta_value FROM {$wpdb->prefix}custom_form_responses_meta WHERE submission_id = %d",
+                    $response->id
+                )
+            );
+
+            $fields_data = [];
+            foreach ($meta_items as $meta) {
+                $fields_data[] = $meta->meta_key . ': ' . $meta->meta_value;
+            }
+
+            fputcsv($output, [
+                $response->id,
+                $response->form_name,
+                implode(' | ', $fields_data),
+                $response->created_at,
+            ]);
+        }
+
+        fclose($output);
+    }
+
+
 }
 
