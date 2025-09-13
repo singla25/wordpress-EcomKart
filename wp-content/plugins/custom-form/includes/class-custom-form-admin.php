@@ -244,88 +244,98 @@ class Custom_Form_Admin {
     public function render_setting_page() {
         global $wpdb;
 
-        // Fetch all forms
+        // Fetch all custom forms (from WP posts)
         $forms = get_posts([
             'post_type'      => 'custom_form',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
         ]);
 
-        $filtered_responses = [];
-        $selected_form_id   = 0;
-        $selected_form_name = '';
+        $selected_form_id = isset($_GET['form_id_filter']) ? intval($_GET['form_id_filter']) : 0;
+        $selected_form = $selected_form_id ? get_post($selected_form_id) : null;
+        $responses = [];
 
-        // Handle form filter (GET)
-        if (!empty($_GET['form_name_filter'])) {
-            $form_name_filter = sanitize_text_field($_GET['form_name_filter']);
-
-            // Find the form ID by name
-            foreach ($forms as $form) {
-                if ($form->post_title === $form_name_filter) {
-                    $selected_form_id   = $form->ID;
-                    $selected_form_name = $form->post_title;
-
-                    // Fetch responses
-                    $filtered_responses = $wpdb->get_results(
-                        $wpdb->prepare(
-                            "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
-                            $selected_form_id
-                        )
-                    );
-
-                    break;
-                }
-            }
+        if ($selected_form_id) {
+            $responses = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
+                    $selected_form_id
+                )
+            );
         }
 
-        // Handle CSV Export Request
+        // Handle Export CSV Request
         if (isset($_GET['export_csv']) && $selected_form_id) {
-            $this->export_responses_as_csv($filtered_responses, $selected_form_name);
-            exit;
+            $this->export_responses_as_csv($selected_form_id, $selected_form->post_title);
         }
 
-        // Pass data to template
+        // Load template
         include plugin_dir_path(__FILE__) . '../templates/render-setting-page.php';
     }
 
-    private function export_responses_as_csv($responses, $form_name) {
+
+    private function export_responses_as_csv($form_id, $form_name) {
+        global $wpdb;
+
+        // Fetch all responses for the form
+        $responses = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
+                $form_id
+            )
+        );
+
         if (empty($responses)) {
             wp_die('No responses to export.');
         }
+
+        // Fetch all unique meta keys (column headers)
+        $meta_keys = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT meta_key FROM {$wpdb->prefix}custom_form_responses_meta WHERE submission_id IN (
+                    SELECT id FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d
+                )",
+                $form_id
+            )
+        );
+
+        // Prepare CSV header row
+        $headers = array_merge(['Submission ID', 'Form Name', 'Submitted At'], $meta_keys);
 
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="form_responses_' . sanitize_title($form_name) . '.csv"');
 
         $output = fopen('php://output', 'w');
-
-        // Add CSV headers
-        fputcsv($output, ['Submission ID', 'Form Name', 'Fields Data (meta_key => meta_value)', 'Submitted At']);
-
-        global $wpdb;
+        fputcsv($output, $headers);
 
         foreach ($responses as $response) {
+            // Fetch all meta data for this submission
             $meta_items = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT meta_key, meta_value FROM {$wpdb->prefix}custom_form_responses_meta WHERE submission_id = %d",
                     $response->id
-                )
+                ),
+                OBJECT_K
             );
 
-            $fields_data = [];
-            foreach ($meta_items as $meta) {
-                $fields_data[] = $meta->meta_key . ': ' . $meta->meta_value;
+            $row = [
+                $response->id,
+                $form_name,
+                $response->created_at,
+            ];
+
+            foreach ($meta_keys as $meta_key) {
+                $row[] = isset($meta_items[$meta_key]) ? $meta_items[$meta_key]->meta_value : '';
             }
 
-            fputcsv($output, [
-                $response->id,
-                $response->form_name,
-                implode(' | ', $fields_data),
-                $response->created_at,
-            ]);
+            fputcsv($output, $row);
         }
 
         fclose($output);
+        exit;
     }
+
+
 
 
 }

@@ -1,29 +1,28 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 
 <div class="wrap">
-    <h1>📋 All Custom Form Responses</h1>
+    <h1>📋 Custom Form Responses</h1>
 
-    <!-- Filter Form -->
     <form method="get" style="margin-bottom: 20px;">
         <input type="hidden" name="page" value="<?php echo esc_attr($_GET['page']); ?>">
-        
-        <label for="form_name_filter">Filter by Form Name:</label>
-        <select name="form_name_filter" id="form_name_filter">
-            <option value="">-- All Forms --</option>
-            <?php foreach ($forms as $form_name) : ?>
-                <option value="<?php echo esc_attr($form_name->post_title); ?>" <?php selected(isset($_GET['form_name_filter']) ? $_GET['form_name_filter'] : '', $form_name->post_title); ?>>
-                    <?php echo esc_html($form_name->post_title); ?>
+
+        <label for="form_id_filter">Select Form:</label>
+        <select name="form_id_filter" id="form_id_filter">
+            <option value="">-- Select Form --</option>
+            <?php foreach ($forms as $form) : ?>
+                <option value="<?php echo esc_attr($form->ID); ?>" <?php selected(isset($_GET['form_id_filter']) ? intval($_GET['form_id_filter']) : 0, $form->ID); ?>>
+                    <?php echo esc_html($form->post_title); ?>
                 </option>
             <?php endforeach; ?>
         </select>
-        <button type="submit" class="button">🔍 Apply Filter</button>
+
+        <button type="submit" class="button">Apply Filter</button>
     </form>
 
-    <?php if (!empty($filtered_responses)) : ?>
-        <h2>Responses for Form: <?php echo esc_html($selected_form_name); ?></h2>
+    <?php if ($selected_form && $responses): ?>
+        <h2>Responses for: <?php echo esc_html($selected_form->post_title); ?></h2>
 
-        <!-- Export CSV Link -->
-        <a href="<?php echo admin_url('admin.php?page=' . esc_attr($_GET['page']) . '&form_name_filter=' . urlencode($selected_form_name) . '&export_csv=1'); ?>" class="button button-primary" style="margin-bottom: 20px;">
+        <a href="<?php echo admin_url('admin.php?page=' . esc_attr($_GET['page']) . '&form_id_filter=' . $selected_form_id . '&export_csv=1'); ?>" class="button button-primary" style="margin-bottom: 20px;">
             ⬇️ Export Responses as CSV
         </a>
 
@@ -32,16 +31,17 @@
                 <tr>
                     <th>#</th>
                     <th>Submission ID</th>
-                    <th>Fields Data</th>
                     <th>Submitted At</th>
+                    <th>Fields</th>
                 </tr>
             </thead>
             <tbody>
                 <?php $counter = 1; ?>
-                <?php foreach ($filtered_responses as $response) : ?>
+                <?php foreach ($responses as $response): ?>
                     <tr>
                         <td><?php echo $counter++; ?></td>
                         <td><?php echo esc_html($response->id); ?></td>
+                        <td><?php echo esc_html($response->created_at); ?></td>
                         <td>
                             <ul>
                                 <?php
@@ -52,19 +52,17 @@
                                     )
                                 );
 
-                                foreach ($meta_items as $meta) {
+                                foreach ($meta_items as $meta):
                                     echo '<li><strong>' . esc_html($meta->meta_key) . ':</strong> ' . esc_html($meta->meta_value) . '</li>';
-                                }
+                                endforeach;
                                 ?>
                             </ul>
                         </td>
-                        <td><?php echo esc_html($response->created_at); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-
-    <?php elseif (isset($_GET['form_name_filter'])) : ?>
-        <p>No responses found for selected form.</p>
+    <?php elseif (isset($_GET['form_id_filter'])): ?>
+        <p>No responses found for this form.</p>
     <?php endif; ?>
 </div>
