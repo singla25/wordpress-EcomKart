@@ -16,7 +16,7 @@ require_once plugin_dir_path(__FILE__) . 'includes/class-custom-form-admin.php';
 
 // Activation Hook: Create custom tables for storing responses
 register_activation_hook(__FILE__, 'custom_form_create_tables');
-function custom_form_create_tables() {
+function custom_form_create_tables() {  
     global $wpdb;
     $charset_collate = $wpdb->get_charset_collate();
 

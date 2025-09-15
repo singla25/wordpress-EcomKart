@@ -54,7 +54,7 @@ class Custom_Form_Handler {
                     echo '<div class="form-field ' . esc_attr($width_class) . '">';
                     echo '<label>' . esc_html(ucfirst($label)) . '</label>';
 
-                    if (in_array($type, ['text', 'email', 'number', 'phone', 'password'])) {
+                    if (in_array($type, ['text', 'email', 'number', 'phone', 'password', 'password'])) {
                         echo '<input type="' . esc_attr($type) . '" name="field_' . $index . '" ' . $required . '>';
                     } elseif ($type === 'textarea') {
                         echo '<textarea name="field_' . $index . '" ' . $required . '></textarea>';

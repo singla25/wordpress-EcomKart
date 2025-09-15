@@ -13,6 +13,7 @@ class Custom_Form_Admin {
         add_action('save_post_custom_form', [$this, 'handle_form_save']);   
         add_filter('manage_custom_form_posts_columns', [$this, 'add_shortcode_column']);
         add_action('manage_custom_form_posts_custom_column', [$this, 'render_shortcode_column'], 10, 2);
+        add_action('admin_post_export_custom_form_csv', [$this, 'handle_export_csv_request']); // to run custom url in wp
     }
 
     public function enqueue_admin_assets() {
@@ -27,7 +28,7 @@ class Custom_Form_Admin {
             'manage_options',
             'custom_form_builder',
             [$this, 'render_admin_page'],
-            'dashicons-forms',
+            'dashicons-text-page',
             6
         );
 
@@ -93,6 +94,7 @@ class Custom_Form_Admin {
             <h1>🛠️ Custom Form Builder</h1>
             
             <?php wp_nonce_field('save_form_meta', 'form_meta_nonce'); ?>
+
             <input type="hidden" name="post_id" value="<?php echo esc_attr(get_the_ID()); ?>">
 
             <div class="form-fields-section">
@@ -120,6 +122,7 @@ class Custom_Form_Admin {
                                     <option value="text" <?php selected($field['type'], 'text'); ?>>Text</option>
                                     <option value="email" <?php selected($field['type'], 'email'); ?>>Email</option>
                                     <option value="phone" <?php selected($field['type'], 'phone'); ?>>Phone</option>
+                                    <option value="password" <?php selected($field['type'], 'password'); ?>>Password</option>
                                     <option value="number" <?php selected($field['type'], 'number'); ?>>Number</option>
                                     <option value="textarea" <?php selected($field['type'], 'textarea'); ?>>Textarea</option>
                                     <option value="select" <?php selected($field['type'], 'select'); ?>>Select</option>
@@ -244,7 +247,7 @@ class Custom_Form_Admin {
     public function render_setting_page() {
         global $wpdb;
 
-        // Fetch all custom forms (from WP posts)
+        // Fetch all custom forms
         $forms = get_posts([
             'post_type'      => 'custom_form',
             'post_status'    => 'publish',
@@ -264,20 +267,33 @@ class Custom_Form_Admin {
             );
         }
 
-        // Handle Export CSV Request
-        if (isset($_GET['export_csv']) && $selected_form_id) {
-            $this->export_responses_as_csv($selected_form_id, $selected_form->post_title);
-        }
-
-        // Load template
+        // Load template for displaying responses
         include plugin_dir_path(__FILE__) . '../templates/render-setting-page.php';
     }
 
+    public function handle_export_csv_request() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+      
+        // Verify nonce
+        if (!isset($_POST['export_csv_nonce']) || !wp_verify_nonce($_POST['export_csv_nonce'], 'export_csv_action')) {
+            wp_die('Security check failed.');
+        }
+
+        $form_id = isset($_POST['form_id_filter']) ? intval($_POST['form_id_filter']) : 0;
+        if (!$form_id) wp_die('No form selected');
+
+        $form = get_post($form_id);
+        if (!$form) wp_die('Form not found');
+
+        $this->export_responses_as_csv($form_id, $form->post_title);
+    }
 
     private function export_responses_as_csv($form_id, $form_name) {
         global $wpdb;
 
-        // Fetch all responses for the form
+        // Fetch all responses for the given form
         $responses = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}custom_form_responses WHERE form_id = %d ORDER BY created_at DESC",
@@ -286,7 +302,7 @@ class Custom_Form_Admin {
         );
 
         if (empty($responses)) {
-            wp_die('No responses to export.');
+            wp_die('No responses found to export.');
         }
 
         // Fetch all unique meta keys (column headers)
@@ -302,14 +318,18 @@ class Custom_Form_Admin {
         // Prepare CSV header row
         $headers = array_merge(['Submission ID', 'Form Name', 'Submitted At'], $meta_keys);
 
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="form_responses_' . sanitize_title($form_name) . '.csv"');
+        $output = fopen('php://output', 'w');  // php://output this send response to browser
 
-        $output = fopen('php://output', 'w');
+        echo "<pre>";
+        print_r($headers);
+        echo "<br>";
+
+        // Output header row
         fputcsv($output, $headers);
 
+        // Output each response as a row
         foreach ($responses as $response) {
-            // Fetch all meta data for this submission
+            // Fetch meta data per response
             $meta_items = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT meta_key, meta_value FROM {$wpdb->prefix}custom_form_responses_meta WHERE submission_id = %d",
@@ -330,12 +350,15 @@ class Custom_Form_Admin {
 
             fputcsv($output, $row);
         }
+        
+
+        // Set headers for download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="form_responses_' . sanitize_title($form_name) . '.csv"');
 
         fclose($output);
         exit;
     }
-
-
 
 
 }

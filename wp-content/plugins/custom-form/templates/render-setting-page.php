@@ -22,10 +22,6 @@
     <?php if ($selected_form && $responses): ?>
         <h2>Responses for: <?php echo esc_html($selected_form->post_title); ?></h2>
 
-        <a href="<?php echo admin_url('admin.php?page=' . esc_attr($_GET['page']) . '&form_id_filter=' . $selected_form_id . '&export_csv=1'); ?>" class="button button-primary" style="margin-bottom: 20px;">
-            ⬇️ Export Responses as CSV
-        </a>
-
         <table class="widefat striped">
             <thead>
                 <tr>
@@ -62,6 +58,15 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <!-- Export CSV Button Using POST Method -->
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin-top: 20px;">
+            <input type="hidden" name="action" value="export_custom_form_csv">
+            <input type="hidden" name="form_id_filter" value="<?php echo esc_attr($selected_form_id); ?>">
+            <?php wp_nonce_field('export_csv_action', 'export_csv_nonce'); ?>
+            <button type="submit" class="button button-primary">📥 Export Responses as CSV</button>
+        </form>
+        
     <?php elseif (isset($_GET['form_id_filter'])): ?>
         <p>No responses found for this form.</p>
     <?php endif; ?>
