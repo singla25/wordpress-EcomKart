@@ -171,7 +171,7 @@ function mytheme_filter_data() {
     </div>
     
     <?php
-    $output = $output = ob_get_clean();
+    $output = ob_get_clean();
 
     wp_send_json([
         'status'  => 'success',
